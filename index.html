@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Autentikasi POS Stok RodSel</title>
+    <!-- Tambahkan SweetAlert agar pop-up error lebih rapi -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #e2e8f0; color: #333; padding: 20px; }
@@ -18,7 +20,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .form-content h2 { margin-bottom: 25px; text-align: center; color: #0f172a; }
         
-        /* Modifikasi untuk layout form bersampingan (Nama Depan & Belakang) */
         .row { display: flex; gap: 15px; }
         .row .input-group { flex: 1; }
 
@@ -65,19 +66,19 @@
                 <h2>Registrasi Pegawai</h2>
                 <form id="registerForm">
                     <div class="profile-upload-container">
-                        <div class="profile-preview" id="profilePreview"><span></span></div>
-                        <label for="reg-photo" class="upload-label">Unggah Foto Profil</label>
+                        <div class="profile-preview" id="profilePreview"><span>📷</span></div>
+                        <label for="reg-photo" class="upload-label">Unggah Foto Profil (Opsional)</label>
                         <input type="file" id="reg-photo" accept="image/*" style="display: none;">
                     </div>
 
                     <div class="row">
                         <div class="input-group">
                             <label for="reg-first-name">Nama Depan</label>
-                            <input type="text" id="reg-first-name" placeholder="John" required>
+                            <input type="text" id="reg-first-name" placeholder="Ferdi" required>
                         </div>
                         <div class="input-group">
                             <label for="reg-last-name">Nama Belakang</label>
-                            <input type="text" id="reg-last-name" placeholder="Doe" required>
+                            <input type="text" id="reg-last-name" placeholder="Mowilex" required>
                         </div>
                     </div>
 
@@ -111,13 +112,13 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
-        // Tambahan import 'get' dan 'child' untuk mengambil data jabatan saat login
-        import { getDatabase, ref as dbRef, set, get, child } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+        
+        // PENTING: Gunakan Firestore agar sinkron dengan dashboard!
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
             authDomain: "rodsel-pos-online.firebaseapp.com",
-            databaseURL: "https://rodsel-pos-online-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "rodsel-pos-online",
             storageBucket: "rodsel-pos-online.firebasestorage.app",
             messagingSenderId: "607558554103",
@@ -127,7 +128,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const storage = getStorage(app);
-        const db = getDatabase(app);
+        const db = getFirestore(app); // Menggunakan Firestore
 
         // UI Variables
         const btnLoginTab = document.getElementById('btn-login-tab');
@@ -181,11 +182,6 @@
             const password = document.getElementById('reg-password').value;
             const photoFile = photoInput.files[0];
 
-            if (!photoFile) {
-                alert("Harap unggah foto profil terlebih dahulu.");
-                return;
-            }
-
             try {
                 btnSubmit.disabled = true;
                 btnSubmit.innerText = "Memproses...";
@@ -194,33 +190,37 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Unggah Foto Profil
-                const imagePath = `profile_pictures/${user.uid}`;
-                const imageRef = storageRef(storage, imagePath);
-                await uploadBytes(imageRef, photoFile);
-                const photoURL = await getDownloadURL(imageRef);
+                let photoURL = "";
+                // Unggah Foto Profil (Jika ada)
+                if (photoFile) {
+                    const imagePath = `profile_pictures/${user.uid}`;
+                    const imageRef = storageRef(storage, imagePath);
+                    await uploadBytes(imageRef, photoFile);
+                    photoURL = await getDownloadURL(imageRef);
+                }
 
-                // Simpan Data Lengkap ke Database
-                await set(dbRef(db, `users/${user.uid}`), {
+                // Simpan Data Lengkap ke FIRESTORE
+                await setDoc(doc(db, "users", user.uid), {
+                    nama: firstName + " " + lastName, // Digunakan oleh Dashboard
                     namaDepan: firstName,
                     namaBelakang: lastName,
-                    namaLengkap: `${firstName} ${lastName}`,
                     email: email,
-                    role: role,
+                    role: role.toLowerCase(), // Di-lowercase agar aman
                     photoURL: photoURL,
-                    tanggalDaftar: new Date().toISOString()
+                    tanggalDaftar: new Date()
                 });
 
-                // Setelah berhasil, arahkan kembali ke Login
-                alert("Pendaftaran Berhasil! Silakan masuk dengan akun baru Anda.");
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Silakan login dengan akun baru Anda.', timer: 2000 });
                 document.getElementById('registerForm').reset();
                 profilePreview.style.backgroundImage = 'none';
-                profilePreview.innerHTML = '<span></span>';
+                profilePreview.innerHTML = '<span>📷</span>';
                 switchTab('login');
 
             } catch (error) {
                 console.error("Error Registrasi:", error);
-                alert("Gagal mendaftar: " + error.message);
+                let pesanError = "Gagal mendaftar.";
+                if (error.code === 'auth/email-already-in-use') pesanError = "Email ini sudah terdaftar!";
+                Swal.fire('Gagal', pesanError, 'error');
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = "Daftar Sekarang";
@@ -243,35 +243,33 @@
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                // Mengambil Jabatan (Role) dari Realtime Database
-                const dbRefInstance = dbRef(db);
-                const snapshot = await get(child(dbRefInstance, `users/${user.uid}`));
+                // Mengambil Jabatan (Role) dari FIRESTORE
+                const docSnap = await getDoc(doc(db, "users", user.uid));
                 
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    const userRole = userData.role;
+                if (docSnap.exists()) {
+                    const userRole = docSnap.data().role.toLowerCase();
                     
-                    alert(`Login Berhasil! Mengarahkan ke dashboard ${userRole}...`);
+                    Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', showConfirmButton: false, timer: 1000 });
 
-                    // Arahkan ke dashboard berdasarkan jabatan
-                    if (userRole === 'owner') {
-                        window.location.href = 'dashboard-owner.html';
-                    } else if (userRole === 'admin') {
-                        window.location.href = 'dashboard-admin.html';
-                    } else if (userRole === 'kasir') {
-                        window.location.href = 'dashboard-kasir.html';
-                    } else if (userRole === 'sales') {
-                        window.location.href = 'dashboard-sales.html';
-                    } else {
-                        alert("Jabatan tidak dikenali, hubungi administrator.");
-                    }
+                    setTimeout(() => {
+                        // Arahkan ke dashboard berdasarkan jabatan
+                        if (userRole === 'owner' || userRole === 'admin') {
+                            window.location.href = 'dashboard-admin.html';
+                        } else if (userRole === 'kasir') {
+                            window.location.href = 'dashboard-kasir.html';
+                        } else if (userRole === 'sales') {
+                            window.location.href = 'dashboard-sales.html';
+                        } else {
+                            Swal.fire('Error', 'Jabatan tidak dikenali.', 'error');
+                        }
+                    }, 1000);
                 } else {
-                    alert("Data pengguna tidak ditemukan di sistem.");
+                    Swal.fire('Oops!', 'Data pengguna tidak ditemukan di sistem. Harap lapor admin.', 'error');
                 }
 
             } catch (error) {
                 console.error("Error Login:", error);
-                alert("Gagal masuk. Periksa kembali email dan kata sandi Anda.");
+                Swal.fire('Login Gagal', 'Periksa kembali email dan kata sandi Anda.', 'error');
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = "Masuk";
