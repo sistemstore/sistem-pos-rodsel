@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Autentikasi POS Stok RodSel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #e2e8f0; color: #333; padding: 20px; }
+        .auth-container { background-color: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); width: 100%; max-width: 450px; overflow: hidden; }
+        .auth-header { display: flex; border-bottom: 1px solid #e2e8f0; }
+        .tab-btn { flex: 1; padding: 20px; background: none; border: none; font-size: 16px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.3s ease; }
+        .tab-btn:hover { color: #0f172a; }
+        .tab-btn.active { color: #2563eb; border-bottom: 3px solid #2563eb; background-color: #f8fafc; }
+        .form-area { padding: 30px 40px; }
+        .form-content { display: none; animation: fadeIn 0.4s; }
+        .form-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .form-content h2 { margin-bottom: 25px; text-align: center; color: #0f172a; }
+        
+        /* Modifikasi untuk layout form bersampingan (Nama Depan & Belakang) */
+        .row { display: flex; gap: 15px; }
+        .row .input-group { flex: 1; }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #475569; }
+        .input-group input, .input-group select { width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.3s; background-color: #fff; }
+        .input-group input:focus, .input-group select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+        
+        .profile-upload-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        .profile-preview { width: 100px; height: 100px; border-radius: 50%; background-color: #f1f5f9; border: 2px dashed #cbd5e1; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; overflow: hidden; background-size: cover; background-position: center; color: #94a3b8; font-size: 24px; }
+        .upload-label { color: #2563eb; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .upload-label:hover { text-decoration: underline; }
+        
+        .submit-btn { width: 100%; padding: 14px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.3s; margin-top: 10px; }
+        .submit-btn:hover { background-color: #1d4ed8; }
+        .submit-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-header">
+            <button class="tab-btn active" id="btn-login-tab">Masuk</button>
+            <button class="tab-btn" id="btn-register-tab">Daftar</button>
+        </div>
+
+        <div class="form-area">
+            <div id="form-login" class="form-content active">
+                <h2>Selamat Datang</h2>
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" placeholder="nama@email.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Kata Sandi</label>
+                        <input type="password" id="login-password" placeholder="Masukkan kata sandi Anda" required>
+                    </div>
+                    <button type="submit" class="submit-btn" id="btn-login-submit">Masuk</button>
+                </form>
+            </div>
+
+            <div id="form-register" class="form-content">
+                <h2>Registrasi Pegawai</h2>
+                <form id="registerForm">
+                    <div class="profile-upload-container">
+                        <div class="profile-preview" id="profilePreview"><span></span></div>
+                        <label for="reg-photo" class="upload-label">Unggah Foto Profil</label>
+                        <input type="file" id="reg-photo" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="row">
+                        <div class="input-group">
+                            <label for="reg-first-name">Nama Depan</label>
+                            <input type="text" id="reg-first-name" placeholder="John" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="reg-last-name">Nama Belakang</label>
+                            <input type="text" id="reg-last-name" placeholder="Doe" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-role">Jabatan</label>
+                        <select id="reg-role" required>
+                            <option value="" disabled selected>-- Pilih Jabatan --</option>
+                            <option value="owner">Owner</option>
+                            <option value="admin">Admin</option>
+                            <option value="kasir">Kasir</option>
+                            <option value="sales">Sales</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-email">Email</label>
+                        <input type="email" id="reg-email" placeholder="nama@email.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-password">Kata Sandi</label>
+                        <input type="password" id="reg-password" placeholder="Minimal 6 karakter" required minlength="6">
+                    </div>
+                    
+                    <button type="submit" class="submit-btn" id="btn-register-submit">Daftar Sekarang</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
+        // Tambahan import 'get' dan 'child' untuk mengambil data jabatan saat login
+        import { getDatabase, ref as dbRef, set, get, child } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
+            authDomain: "rodsel-pos-online.firebaseapp.com",
+            databaseURL: "https://rodsel-pos-online-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "rodsel-pos-online",
+            storageBucket: "rodsel-pos-online.firebasestorage.app",
+            messagingSenderId: "607558554103",
+            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getDatabase(app);
+
+        // UI Variables
+        const btnLoginTab = document.getElementById('btn-login-tab');
+        const btnRegisterTab = document.getElementById('btn-register-tab');
+        const formLogin = document.getElementById('form-login');
+        const formRegister = document.getElementById('form-register');
+        const photoInput = document.getElementById('reg-photo');
+        const profilePreview = document.getElementById('profilePreview');
+
+        // Fungsi Switch Tab
+        function switchTab(tabId) {
+            btnLoginTab.classList.remove('active');
+            btnRegisterTab.classList.remove('active');
+            formLogin.classList.remove('active');
+            formRegister.classList.remove('active');
+
+            if (tabId === 'login') {
+                btnLoginTab.classList.add('active');
+                formLogin.classList.add('active');
+            } else {
+                btnRegisterTab.classList.add('active');
+                formRegister.classList.add('active');
+            }
+        }
+
+        btnLoginTab.addEventListener('click', () => switchTab('login'));
+        btnRegisterTab.addEventListener('click', () => switchTab('register'));
+
+        // Preview Foto
+        photoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePreview.style.backgroundImage = `url(${e.target.result})`;
+                    profilePreview.innerHTML = ''; 
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // REGISTRASI
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById('btn-register-submit');
+            const firstName = document.getElementById('reg-first-name').value;
+            const lastName = document.getElementById('reg-last-name').value;
+            const role = document.getElementById('reg-role').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const photoFile = photoInput.files[0];
+
+            if (!photoFile) {
+                alert("Harap unggah foto profil terlebih dahulu.");
+                return;
+            }
+
+            try {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = "Memproses...";
+
+                // Buat Akun Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Unggah Foto Profil
+                const imagePath = `profile_pictures/${user.uid}`;
+                const imageRef = storageRef(storage, imagePath);
+                await uploadBytes(imageRef, photoFile);
+                const photoURL = await getDownloadURL(imageRef);
+
+                // Simpan Data Lengkap ke Database
+                await set(dbRef(db, `users/${user.uid}`), {
+                    namaDepan: firstName,
+                    namaBelakang: lastName,
+                    namaLengkap: `${firstName} ${lastName}`,
+                    email: email,
+                    role: role,
+                    photoURL: photoURL,
+                    tanggalDaftar: new Date().toISOString()
+                });
+
+                // Setelah berhasil, arahkan kembali ke Login
+                alert("Pendaftaran Berhasil! Silakan masuk dengan akun baru Anda.");
+                document.getElementById('registerForm').reset();
+                profilePreview.style.backgroundImage = 'none';
+                profilePreview.innerHTML = '<span></span>';
+                switchTab('login');
+
+            } catch (error) {
+                console.error("Error Registrasi:", error);
+                alert("Gagal mendaftar: " + error.message);
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Daftar Sekarang";
+            }
+        });
+
+        // LOGIN DAN ROUTING DASHBOARD
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById('btn-login-submit');
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = "Memeriksa kredensial...";
+
+                // Autentikasi Pengguna
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Mengambil Jabatan (Role) dari Realtime Database
+                const dbRefInstance = dbRef(db);
+                const snapshot = await get(child(dbRefInstance, `users/${user.uid}`));
+                
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    const userRole = userData.role;
+                    
+                    alert(`Login Berhasil! Mengarahkan ke dashboard ${userRole}...`);
+
+                    // Arahkan ke dashboard berdasarkan jabatan
+                    if (userRole === 'owner') {
+                        window.location.href = 'dashboard-owner.html';
+                    } else if (userRole === 'admin') {
+                        window.location.href = 'dashboard-admin.html';
+                    } else if (userRole === 'kasir') {
+                        window.location.href = 'dashboard-kasir.html';
+                    } else if (userRole === 'sales') {
+                        window.location.href = 'dashboard-sales.html';
+                    } else {
+                        alert("Jabatan tidak dikenali, hubungi administrator.");
+                    }
+                } else {
+                    alert("Data pengguna tidak ditemukan di sistem.");
+                }
+
+            } catch (error) {
+                console.error("Error Login:", error);
+                alert("Gagal masuk. Periksa kembali email dan kata sandi Anda.");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Masuk";
+            }
+        });
+    </script>
+</body>
+</html>

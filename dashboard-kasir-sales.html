@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kasir & Sales - POS Stok RodSel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        /* --- CSS DASAR & LAYOUT --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f1f5f9; color: #334155; overflow: hidden; }
+
+        /* SIDEBAR KIRI */
+        .sidebar { width: 260px; background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 100; flex-shrink: 0; }
+        .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; border-bottom: 1px solid #1e293b; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+        .close-sidebar { display: none; cursor: pointer; color: #f8fafc; font-size: 20px; }
+        .nav-menu { flex: 1; padding: 20px 0; overflow-y: auto; }
+        .nav-item { padding: 12px 25px; display: flex; align-items: center; gap: 15px; color: #cbd5e1; text-decoration: none; transition: 0.2s; cursor: pointer; font-size: 15px; }
+        .nav-item:hover, .nav-item.active { background-color: #1e293b; color: #38bdf8; border-left: 4px solid #38bdf8; }
+        .nav-item i { font-size: 18px; width: 25px; text-align: center; }
+        .logout-btn { padding: 15px 25px; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 15px; border-top: 1px solid #1e293b; transition: 0.2s; }
+        .logout-btn:hover { background-color: #1e293b; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 90; }
+
+        /* KONTEN UTAMA */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+
+        /* TOPBAR (HEADER) */
+        .topbar { background-color: #ffffff; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 10; }
+        .topbar-left { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: 600; color: #0f172a; }
+        .menu-toggle { display: none; cursor: pointer; font-size: 24px; color: #334155; }
+        .topbar-right { display: flex; align-items: center; gap: 15px; }
+        
+        .icon-action { position: relative; font-size: 20px; color: #64748b; cursor: pointer; transition: 0.2s; padding: 5px; }
+        .icon-action:hover { color: #0f172a; }
+        .badge { position: absolute; top: -2px; right: -5px; background-color: #ef4444; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 50%; border: 2px solid #ffffff; }
+
+        .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .user-info { text-align: right; }
+        .user-name { font-size: 14px; font-weight: bold; color: #0f172a; }
+        .user-role { font-size: 12px; color: #64748b; text-transform: capitalize; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8f0; object-fit: cover; }
+        .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background-color: #22c55e; border: 2px solid #ffffff; border-radius: 50%; }
+
+        /* AREA KONTEN MENU */
+        .content-area { padding: 20px; overflow-y: auto; flex: 1; display: none; }
+        .content-area.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
+        .card h3 { margin-bottom: 15px; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+
+        /* INPUT & TOMBOL */
+        .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; margin-bottom: 10px; }
+        .form-control:focus { border-color: #38bdf8; }
+        .form-control-sm { padding: 5px; width: 100px; text-align: right; }
+        
+        .btn { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; justify-content: center; }
+        .btn-primary { background-color: #2563eb; color: white; }
+        .btn-success { background-color: #16a34a; color: white; }
+        .btn-warning { background-color: #f59e0b; color: white; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-dark { background-color: #0f172a; color: white; }
+        .btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+        /* TABEL & LAYOUT NOTA */
+        table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        .table-responsive { overflow-x: auto; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
+        
+        .nota-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+        .keranjang-box { background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .total-bayar { font-size: 24px; font-weight: bold; color: #0f172a; text-align: right; margin: 15px 0; border-top: 2px dashed #cbd5e1; padding-top: 15px; }
+
+        .badge-status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .bg-pending { background: #fef3c7; color: #d97706; }
+        .bg-lunas { background: #dcfce7; color: #16a34a; }
+
+        /* KAMERA ABSEN */
+        .camera-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        #videoElement { width: 100%; max-width: 400px; border-radius: 12px; border: 3px solid #cbd5e1; background: #000; }
+        #canvasElement { display: none; width: 100%; max-width: 400px; border-radius: 12px; border: 3px solid #22c55e; }
+
+        /* --- FITUR CHAT PANEL --- */
+        .chat-panel { position: fixed; top: 0; right: -400px; width: 350px; height: 100vh; background: #ffffff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); z-index: 1000; transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .chat-panel.active { right: 0; }
+        .chat-header { background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .chat-header i { cursor: pointer; font-size: 20px; }
+        
+        /* List Kontak Chat */
+        .chat-contacts { flex: 1; overflow-y: auto; background: #f8fafc; }
+        .contact-item { padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
+        .contact-item:hover { background: #e2e8f0; }
+        .contact-avatar { width: 40px; height: 40px; border-radius: 50%; background: #38bdf8; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; }
+        .status-online { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; border: 2px solid white; }
+        .contact-info { flex: 1; }
+        .contact-info h4 { font-size: 14px; color: #0f172a; margin-bottom: 3px; }
+        .contact-info p { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        
+        /* Room Chat */
+        .chat-room { display: none; flex: 1; flex-direction: column; background: #f1f5f9; }
+        .room-header { background: #f8fafc; padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a; }
+        .room-header i { cursor: pointer; color: #64748b; }
+        .room-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .msg-bubble { max-width: 80%; padding: 10px 15px; border-radius: 12px; font-size: 13px; line-height: 1.4; }
+        .msg-received { background: white; color: #334155; align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid #e2e8f0; }
+        .msg-sent { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+        
+        .room-input { padding: 15px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; }
+        .room-input input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 14px; }
+        .room-input button { background: #2563eb; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        /* --- STYLES KHUSUS PRINT --- */
+        .print-container { display: none; background: white; }
+        @media print {
+            body * { visibility: hidden; }
+            .printing .print-container.active-print, .printing .print-container.active-print * { visibility: visible; }
+            .printing .print-container.active-print { position: absolute; left: 0; top: 0; display: block !important; }
+            .format-thermal { width: 58mm; padding: 10px; font-family: 'Courier New', Courier, monospace; font-size: 12px; color: black; margin: 0 auto; }
+            .format-thermal table { min-width: 100%; font-size: 12px; }
+            .format-thermal th, .format-thermal td { padding: 2px 0; border: none; }
+            .format-thermal .garis { border-top: 1px dashed black; margin: 10px 0; }
+            .format-a4 { width: 210mm; padding: 20px; font-family: Arial, sans-serif; color: black; }
+            .format-a4 table { min-width: 100%; border-collapse: collapse; }
+            .format-a4 th, .format-a4 td { padding: 8px; border: 1px solid #ddd; }
+        }
+
+        /* RESPONSIVE ANDROID & PC */
+        @media (max-width: 992px) { .nota-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .close-sidebar { display: block; }
+            .menu-toggle { display: block; }
+            .user-info { display: none; }
+            .content-area { padding: 15px; }
+            /* Chat Panel full screen on Mobile */
+            .chat-panel { width: 100%; right: -100%; }
+            .chat-panel.active { right: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- OVERLAY HP -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR KIRI -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>RodSel POS</span>
+            <i class="fa-solid fa-xmark close-sidebar" onclick="toggleSidebar()"></i>
+        </div>
+        <div class="nav-menu">
+            <a class="nav-item active" onclick="showSection('dashboard', this)"><i class="fa-solid fa-chart-pie"></i> Dashboard Omset</a>
+            <a class="nav-item" onclick="showSection('barang', this)"><i class="fa-solid fa-box-open"></i> Data Barang</a>
+            <a class="nav-item" onclick="showSection('nota', this)"><i class="fa-solid fa-cart-plus"></i> Buat Nota</a>
+            <a class="nav-item" onclick="showSection('scan', this)"><i class="fa-solid fa-barcode"></i> Scan Barcode</a>
+            <a class="nav-item" onclick="showSection('penjualan', this)"><i class="fa-solid fa-receipt"></i> Data Penjualan</a>
+            <a class="nav-item" onclick="showSection('pelanggan', this)"><i class="fa-solid fa-users"></i> Data Pelanggan</a>
+            <a class="nav-item" onclick="showSection('po', this)"><i class="fa-solid fa-truck-fast"></i> Request PO Admin</a>
+            <a class="nav-item" onclick="showSection('absen', this)"><i class="fa-solid fa-camera"></i> Absen Karyawan</a>
+        </div>
+        <div class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <i class="fa-solid fa-bars menu-toggle" onclick="toggleSidebar()"></i>
+                <span id="page-title">Dashboard Omset</span>
+            </div>
+            <div class="topbar-right">
+                <select id="roleSimulator" onchange="ubahRole()" style="padding: 5px; border-radius: 4px; border: 1px solid #ccc; margin-right: 5px;">
+                    <option value="kasir">Akses: Kasir</option>
+                    <option value="sales">Akses: Sales</option>
+                </select>
+                
+                <!-- ICON CHAT & NOTIF -->
+                <div class="icon-action" onclick="toggleChatPanel()"><i class="fa-regular fa-comment-dots"></i><span class="badge">1</span></div>
+                <div class="icon-action"><i class="fa-regular fa-bell"></i><span class="badge">2</span></div>
+                
+                <div class="user-profile">
+                    <div class="user-info">
+                        <div class="user-name">Soleh TWO</div>
+                        <div class="user-role" id="display-role">Kasir / Sales</div>
+                    </div>
+                    <div style="position: relative;">
+                        <img src="https://via.placeholder.com/40" class="avatar">
+                        <div class="status-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 1. DASHBOARD OMSET -->
+        <div id="section-dashboard" class="content-area active">
+            <div class="card">
+                <h3>Semua Omset Penjualan (Kasir & Sales)</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Tanggal</th><th>Nama Barang</th><th>Qty</th><th>Total Penjualan</th></tr></thead>
+                        <tbody>
+                            <tr><td>14 Jun 2026</td><td>Cat Tembok Dasar (Base A)</td><td>1</td><td>Rp 100.000</td></tr>
+                            <tr><td>14 Jun 2026</td><td>Parfum NO FER Zenith</td><td>2</td><td>Rp 300.000</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. DATA BARANG -->
+        <div id="section-barang" class="content-area">
+            <div class="card">
+                <h3>Katalog Data Barang</h3>
+                <input type="text" class="form-control" placeholder="Cari nama barang dari Admin..." style="max-width: 400px;">
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama Produk</th><th>Kategori</th><th>Stok Sistem</th><th>Disc</th><th>Harga Jual</th></tr></thead>
+                        <tbody>
+                            <tr><td>Parfum NO FER Midnight</td><td>Reguler</td><td>120</td><td>0%</td><td>Rp 150.000</td></tr>
+                            <tr><td>Cat Tembok Dasar (Base A)</td><td>Base</td><td>50</td><td>0%</td><td>Rp 85.000</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. BUAT NOTA TRANSAKSI -->
+        <div id="section-nota" class="content-area">
+            <div class="nota-grid">
+                <!-- KIRI: PENCARIAN & DAFTAR BARANG -->
+                <div>
+                    <div class="card">
+                        <h3>Pencarian Barang</h3>
+                        <input type="text" class="form-control" placeholder="Ketik nama barang atau scan barcode...">
+                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                            <table>
+                                <thead><tr><th>Kategori</th><th>Nama Produk</th><th>Harga Satuan (Rp)</th><th>Warna</th><th>Aksi</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge-status bg-lunas">Reguler</span></td>
+                                        <td>Cat Pelapis Anti Bocor</td>
+                                        <td>150.000</td>
+                                        <td>Hitam</td>
+                                        <td><button class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button></td>
+                                    </tr>
+                                    <tr style="background-color: #fefce8;">
+                                        <td><span class="badge-status bg-pending">Base</span></td>
+                                        <td>Cat Tembok Dasar (Base A)</td>
+                                        <td><input type="number" class="form-control-sm" value="85000" title="Edit Harga Base"></td>
+                                        <td><input type="text" class="form-control-sm" placeholder="Ketik Warna..." style="width: 120px;"></td>
+                                        <td><button class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Nota Pending (Draft)</h3>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>No Nota</th><th>Pelanggan</th><th>Status</th><th>Cetak Barcode</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td>TRX-004</td><td>Bpk. Anton</td><td><span class="badge-status bg-pending">Pending</span></td>
+                                        <td><button class="btn btn-dark btn-sm" onclick="cetakBarcodePending('TRX-004')"><i class="fa-solid fa-barcode"></i> Print Barcode</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KANAN: KERANJANG & FORM PELANGGAN -->
+                <div>
+                    <div class="card">
+                        <h3>Data Konsumen</h3>
+                        <input type="text" class="form-control" placeholder="Nama Pelanggan (Wajib)">
+                        <input type="text" class="form-control" placeholder="No Tlp (Opsional)">
+                        <textarea class="form-control" placeholder="Alamat (Opsional)" rows="2"></textarea>
+                    </div>
+
+                    <div class="card keranjang-box">
+                        <h3>Keranjang Belanja</h3>
+                        <table style="margin-bottom: 15px; width: 100%;">
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 5px 0;">Cat Tembok Dasar (Base A) <br><small>Warna: Merah Merona</small></td>
+                                    <td style="text-align: right;">85.000</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; color: #2563eb; font-weight: bold;">+ Biaya Tinta & Oplos</td>
+                                    <td style="text-align: right;"><input type="number" class="form-control-sm" value="15000"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="total-bayar">Total: Rp 100.000</div>
+                        
+                        <div style="display: flex; gap: 10px; flex-direction: column;">
+                            <button class="btn btn-warning" onclick="alert('Pesanan Pending disimpan. Silakan cetak barcode nota untuk dilanjutkan ke Kasir.')">
+                                <i class="fa-solid fa-clock"></i> Simpan Pesanan (Pending)
+                            </button>
+                            <button class="btn btn-success" id="btnBayar" onclick="bukaOpsiCetakLunas()">
+                                <i class="fa-solid fa-money-bill-wave"></i> Proses Pembayaran Lunas
+                            </button>
+                            <p id="alertRole" style="font-size: 12px; color: #ef4444; text-align: center; display: none;">*Pembayaran hanya dapat dilakukan oleh Kasir.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. SCAN BARCODE -->
+        <div id="section-scan" class="content-area">
+            <div class="card" style="text-align: center; padding: 50px 20px;">
+                <h3><i class="fa-solid fa-barcode" style="font-size: 40px; margin-bottom: 20px;"></i><br>Mode Scan Barcode</h3>
+                <p style="color: #64748b; margin-bottom: 20px;">Arahkan scanner ke barcode produk atau barcode nota pending milik Sales.</p>
+                <input type="text" class="form-control" placeholder="Fokuskan kursor ke sini untuk scan..." style="max-width: 500px; margin: 0 auto; text-align: center; font-size: 18px; padding: 15px;" autofocus>
+            </div>
+        </div>
+
+        <!-- 5. DATA PENJUALAN -->
+        <div id="section-penjualan" class="content-area">
+            <div class="card">
+                <h3>Riwayat Penjualan Anda</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Tanggal</th><th>No Nota</th><th>Nama Barang</th><th>Qty</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <tr><td>14 Jun 2026</td><td>TRX-001</td><td>Parfum NO FER Zenith</td><td>2</td><td><span class="badge-status bg-lunas">Lunas</span></td></tr>
+                            <tr><td>14 Jun 2026</td><td>TRX-005</td><td>Cat Tembok Dasar (Base A)</td><td>1</td><td><span class="badge-status bg-lunas">Lunas</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. DATA PELANGGAN -->
+        <div id="section-pelanggan" class="content-area">
+            <div class="card">
+                <h3>Database Pelanggan</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama Pelanggan</th><th>No Tlp</th><th>Alamat</th><th>Produk yang Dibeli</th></tr></thead>
+                        <tbody>
+                            <tr><td>Bpk. Anton</td><td>0812345678</td><td>Depok</td><td>Cat Tembok Dasar</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. REQUEST PO ADMIN -->
+        <div id="section-po" class="content-area">
+            <div class="card">
+                <h3>Request Purchase Order (PO) ke Admin</h3>
+                <input type="text" class="form-control" placeholder="Cari barang untuk di-order..." style="max-width: 400px; margin-bottom: 15px;">
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama Barang</th><th>Stok Sistem</th><th>Stok Fisik (Edit)</th><th>Qty Order</th><th>Aksi</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td>Parfum NO FER Zenith</td>
+                                <td><input type="number" class="form-control" value="5" disabled style="width: 80px;"></td>
+                                <td><input type="number" class="form-control" value="5" style="width: 80px;"></td>
+                                <td><input type="number" class="form-control" placeholder="Jml..." style="width: 80px;"></td>
+                                <td><button class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Tambah</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-success" style="margin-top: 15px;" onclick="alert('PO Dikirim! Tunggu notifikasi ACC dari Admin.')"><i class="fa-solid fa-paper-plane"></i> Kirim PO ke Admin</button>
+            </div>
+        </div>
+
+        <!-- 8. ABSEN -->
+        <div id="section-absen" class="content-area">
+            <div class="card camera-container">
+                <h3>Absensi Kehadiran Karyawan</h3>
+                <video id="videoElement" autoplay playsinline></video>
+                <canvas id="canvasElement"></canvas>
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="bukaKamera()"><i class="fa-solid fa-camera"></i> Buka Kamera</button>
+                    <button class="btn btn-success" onclick="ambilFotoAbsen('Masuk')"><i class="fa-solid fa-sign-in-alt"></i> Check In</button>
+                    <button class="btn btn-danger" onclick="ambilFotoAbsen('Pulang')"><i class="fa-solid fa-sign-out-alt"></i> Check Out</button>
+                </div>
+                <div id="hasil-absen" style="color: #16a34a; font-weight: bold; margin-top: 10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- --- PANEL CHAT INTERNAL --- -->
+    <div class="chat-panel" id="chatPanel">
+        <!-- Header Chat -->
+        <div class="chat-header">
+            <span>Komunikasi Internal</span>
+            <i class="fa-solid fa-xmark" onclick="toggleChatPanel()"></i>
+        </div>
+
+        <!-- Daftar Kontak -->
+        <div class="chat-contacts" id="chatContacts">
+            <div class="contact-item" onclick="bukaRuangChat('Owner RodSel')">
+                <div class="contact-avatar" style="background:#f59e0b;">OW<div class="status-online"></div></div>
+                <div class="contact-info">
+                    <h4>Owner RodSel</h4>
+                    <p>Siap pak, laporan sudah saya kirim...</p>
+                </div>
+            </div>
+            <div class="contact-item" onclick="bukaRuangChat('Admin Ferdian')">
+                <div class="contact-avatar" style="background:#2563eb;">AD<div class="status-online"></div></div>
+                <div class="contact-info">
+                    <h4>Admin Ferdian</h4>
+                    <p>Tolong ACC PO barang kosong ya.</p>
+                </div>
+            </div>
+            <div class="contact-item" onclick="bukaRuangChat('Sales Budi')">
+                <div class="contact-avatar" style="background:#10b981;">SB<div class="status-online"></div></div>
+                <div class="contact-info">
+                    <h4>Sales Budi</h4>
+                    <p>Mas, nota TRX-004 tolong dibayar kasir.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ruang Obrolan (Hidden by default) -->
+        <div class="chat-room" id="chatRoom">
+            <div class="room-header">
+                <i class="fa-solid fa-arrow-left" onclick="kembaliKeKontakChat()"></i>
+                <h4 id="namaLawanBicara">Nama Kontak</h4>
+            </div>
+            <div class="room-messages" id="chatMessages">
+                <div class="msg-bubble msg-received">Halo, apakah stok cat putih masih ada?</div>
+                <div class="msg-bubble msg-sent">Masih aman mas, sisa 5 pail di gudang.</div>
+            </div>
+            <div class="room-input">
+                <input type="text" id="chatInput" placeholder="Ketik pesan..." onkeypress="if(event.key === 'Enter') kirimPesan()">
+                <button onclick="kirimPesan()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AREA CETAK TERSEMBUNYI (Dijalankan saat window.print() dipanggil) -->
+    
+    <!-- 1. Area Cetak Barcode (Format Thermal Kasir) -->
+    <div id="print-barcode" class="print-container format-thermal">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">RodSel POS</h3>
+            <p style="margin: 0; font-size: 10px;">Berikan tiket ini ke Kasir</p>
+        </div>
+        <div style="text-align: center;">
+            <svg id="barcodeSvg"></svg>
+        </div>
+        <p style="text-align: center; font-size: 10px;">Waktu: <span id="waktuPending"></span></p>
+    </div>
+
+    <!-- 2. Area Cetak Struk Lunas (Format Thermal 58mm/80mm) -->
+    <div id="print-struk-thermal" class="print-container format-thermal">
+        <div style="text-align: center;">
+            <h2 style="margin: 0;">POS Stok RodSel</h2>
+            <p style="margin: 0;">Jl. Raya Depok No. 123</p>
+            <p style="margin: 0;">Telp: 08123456789</p>
+        </div>
+        <div class="garis"></div>
+        <p style="margin: 0;">No Nota: TRX-005</p>
+        <p style="margin: 0;">Kasir : User Kasir</p>
+        <p style="margin: 0;">Tgl   : 14 Jun 2026, 10:00</p>
+        <div class="garis"></div>
+        <table>
+            <tr><td>Cat Tembok Base A</td><td style="text-align: right;">85.000</td></tr>
+            <tr><td>Biaya Tinta</td><td style="text-align: right;">15.000</td></tr>
+        </table>
+        <div class="garis"></div>
+        <h3 style="text-align: right; margin: 0;">TOTAL: Rp 100.000</h3>
+        <p style="text-align: right; margin: 0;">STATUS: LUNAS</p>
+        <div class="garis"></div>
+        <p style="text-align: center;">Terima kasih telah berbelanja!</p>
+    </div>
+
+    <!-- 3. Area Cetak Invoice A4 (Printer Kabel Biasa) -->
+    <div id="print-struk-a4" class="print-container format-a4">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+            <div>
+                <h1 style="margin: 0; color: #2563eb;">INVOICE LUNAS</h1>
+                <h3 style="margin: 0;">POS Stok RodSel</h3>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin: 0;"><strong>No:</strong> TRX-005</p>
+                <p style="margin: 0;"><strong>Tgl:</strong> 14 Juni 2026</p>
+            </div>
+        </div>
+        <table>
+            <tr style="background-color: #f1f5f9;">
+                <th>Deskripsi Barang</th><th>Warna/Keterangan</th><th style="text-align: right;">Total Harga</th>
+            </tr>
+            <tr>
+                <td>Cat Tembok Dasar (Base A)</td><td>Merah Merona</td><td style="text-align: right;">Rp 85.000</td>
+            </tr>
+            <tr>
+                <td>Biaya Tinta Campuran</td><td>-</td><td style="text-align: right;">Rp 15.000</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: right; font-weight: bold;">GRAND TOTAL</td>
+                <td style="text-align: right; font-weight: bold; font-size: 18px;">Rp 100.000</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- MODAL PILIHAN CETAK LUNAS -->
+    <div id="modalCetak" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center;">
+            <h2 style="margin-bottom: 10px; color: #16a34a;"><i class="fa-solid fa-circle-check"></i> Pembayaran Berhasil</h2>
+            <p style="margin-bottom: 20px; color: #64748b;">Pilih metode cetak struk/invoice:</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-dark" onclick="eksekusiPrint('print-struk-thermal')"><i class="fa-solid fa-receipt"></i> Print Thermal (Mesin Kasir)</button>
+                <button class="btn btn-primary" onclick="eksekusiPrint('print-struk-a4')"><i class="fa-solid fa-print"></i> Print A4 (Printer Kabel)</button>
+                <button class="btn btn-warning" onclick="downloadPDF()"><i class="fa-solid fa-file-pdf"></i> Download PDF (Portrait/Landscape)</button>
+                <button class="btn btn-success" onclick="kirimWA()"><i class="fa-brands fa-whatsapp"></i> Bagikan ke WhatsApp</button>
+            </div>
+            <button class="btn btn-danger" style="margin-top: 20px; width: 100%;" onclick="tutupModalCetak()">Tutup</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIKA -->
+    <script>
+        // --- LOGIKA SIDEBAR & MENU ---
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('sidebarOverlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none';
+        }
+
+        function showSection(id, el) {
+            document.querySelectorAll('.content-area').forEach(a => a.classList.remove('active'));
+            document.getElementById('section-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+
+            const titles = {
+                'dashboard': 'Dashboard Omset', 'barang': 'Data Barang', 'nota': 'Buat Nota Transaksi',
+                'scan': 'Scan Barcode', 'penjualan': 'Data Penjualan Anda', 'pelanggan': 'Database Pelanggan',
+                'po': 'Request Order ke Admin', 'absen': 'Absensi Karyawan'
+            };
+            document.getElementById('page-title').innerText = titles[id];
+            if (window.innerWidth <= 768) toggleSidebar();
+        }
+
+        // --- PEMBATASAN AKSES SALES/KASIR ---
+        function ubahRole() {
+            const role = document.getElementById('roleSimulator').value;
+            const btnBayar = document.getElementById('btnBayar');
+            const alertRole = document.getElementById('alertRole');
+            if(role === 'sales') {
+                btnBayar.disabled = true; alertRole.style.display = 'block';
+            } else {
+                btnBayar.disabled = false; alertRole.style.display = 'none';
+            }
+        }
+        ubahRole();
+
+        // --- FITUR CHAT PANEL ---
+        function toggleChatPanel() {
+            document.getElementById('chatPanel').classList.toggle('active');
+        }
+        function bukaRuangChat(namaLawan) {
+            document.getElementById('chatContacts').style.display = 'none';
+            document.getElementById('chatRoom').style.display = 'flex';
+            document.getElementById('namaLawanBicara').innerText = namaLawan;
+        }
+        function kembaliKeKontakChat() {
+            document.getElementById('chatRoom').style.display = 'none';
+            document.getElementById('chatContacts').style.display = 'block';
+        }
+        function kirimPesan() {
+            const input = document.getElementById('chatInput');
+            if(input.value.trim() !== '') {
+                const messageBox = document.getElementById('chatMessages');
+                const newMsg = document.createElement('div');
+                newMsg.className = 'msg-bubble msg-sent';
+                newMsg.innerText = input.value;
+                messageBox.appendChild(newMsg);
+                input.value = '';
+                messageBox.scrollTop = messageBox.scrollHeight; // Auto-scroll ke bawah
+            }
+        }
+
+        // --- LOGIKA KAMERA ---
+        let streamActive = null;
+        async function bukaKamera() {
+            const video = document.getElementById('videoElement');
+            video.style.display = 'block';
+            try {
+                streamActive = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                video.srcObject = streamActive;
+            } catch(e) { alert("Izinkan akses kamera di browser Anda!"); }
+        }
+        function ambilFotoAbsen(tipe) {
+            if (!streamActive) return alert("Buka kamera terlebih dahulu!");
+            document.getElementById('hasil-absen').innerText = `Berhasil Check ${tipe}! Data absensi diteruskan ke Admin.`;
+            streamActive.getTracks().forEach(track => track.stop()); streamActive = null;
+        }
+
+        // --- FUNGSI CETAK (PRINT & BARCODE) ---
+        function eksekusiPrint(divId) {
+            document.getElementById('modalCetak').style.display = 'none';
+            document.body.classList.add('printing');
+            document.querySelectorAll('.print-container').forEach(el => el.classList.remove('active-print'));
+            document.getElementById(divId).classList.add('active-print');
+            window.print();
+            document.body.classList.remove('printing');
+        }
+
+        function cetakBarcodePending(noNota) {
+            JsBarcode("#barcodeSvg", noNota, { format: "CODE128", width: 2, height: 50, displayValue: true, fontSize: 14 });
+            document.getElementById('waktuPending').innerText = new Date().toLocaleString('id-ID');
+            eksekusiPrint('print-barcode');
+        }
+
+        function bukaOpsiCetakLunas() { document.getElementById('modalCetak').style.display = 'flex'; }
+        function tutupModalCetak() { document.getElementById('modalCetak').style.display = 'none'; }
+
+        function downloadPDF() {
+            alert("Untuk mendownload PDF:\n1. Tampilan akan diarahkan ke Print A4.\n2. Ubah 'Destination/Tujuan' menjadi 'Save as PDF'.");
+            eksekusiPrint('print-struk-a4');
+        }
+
+        function kirimWA() {
+            const noWA = prompt("Masukkan Nomor WhatsApp (cth: 0812...):");
+            if(noWA) {
+                const textWA = `*INVOICE LUNAS - RodSel POS*\nNo: TRX-005\nTgl: 14 Jun 2026\n\n1x Cat Tembok Dasar (Base A) : Rp 85.000\n1x Biaya Tinta (Warna Merah) : Rp 15.000\n\n*TOTAL: Rp 100.000*\nTerima kasih telah berbelanja!`;
+                window.open(`https://wa.me/${noWA}?text=${encodeURIComponent(textWA)}`, '_blank');
+            }
+        }
+
+        function logout() { confirm('Keluar dari sistem?') && (window.location.href = 'auth.html'); }
+    </script>
+</body>
+</html>

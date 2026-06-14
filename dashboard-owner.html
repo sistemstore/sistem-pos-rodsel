@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Owner - POS Stok RodSel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { display: flex; height: 100vh; background-color: #f1f5f9; color: #334155; overflow: hidden; }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 260px; background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 100; flex-shrink: 0; }
+        .sidebar-header { padding: 20px; font-size: 22px; font-weight: bold; text-align: center; border-bottom: 1px solid #1e293b; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+        .close-sidebar { display: none; cursor: pointer; color: #f8fafc; font-size: 20px; }
+        .nav-menu { flex: 1; padding: 20px 0; overflow-y: auto; }
+        .nav-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; color: #cbd5e1; text-decoration: none; transition: 0.2s; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { background-color: #1e293b; color: #38bdf8; border-left: 4px solid #38bdf8; }
+        .nav-item i { font-size: 18px; width: 25px; text-align: center; }
+        .logout-btn { padding: 15px 25px; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 15px; border-top: 1px solid #1e293b; transition: 0.2s; }
+        .logout-btn:hover { background-color: #1e293b; }
+
+        /* Overlay untuk versi mobile */
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 90; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
+
+        /* --- TOP HEADER --- */
+        .topbar { background-color: #ffffff; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 10; }
+        .topbar-left { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: 600; color: #0f172a; }
+        .menu-toggle { display: none; cursor: pointer; font-size: 24px; color: #334155; }
+        .topbar-right { display: flex; align-items: center; gap: 20px; }
+        
+        .icon-action { position: relative; font-size: 20px; color: #64748b; cursor: pointer; transition: 0.2s; padding: 5px; }
+        .icon-action:hover { color: #0f172a; }
+        .badge { position: absolute; top: -2px; right: -5px; background-color: #ef4444; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 50%; border: 2px solid #ffffff; }
+
+        .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .user-info { text-align: right; }
+        .user-name { font-size: 14px; font-weight: bold; color: #0f172a; }
+        .user-role { font-size: 12px; color: #64748b; text-transform: capitalize; }
+        .avatar-container { position: relative; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #e2e8f0; object-fit: cover; }
+        .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background-color: #22c55e; border: 2px solid #ffffff; border-radius: 50%; }
+
+        /* --- DASHBOARD AREA --- */
+        .content-area { padding: 20px; overflow-y: auto; flex: 1; display: none; }
+        .content-area.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Grid Statistik & Grafik */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 24px; flex-shrink: 0; }
+        .bg-blue { background: #e0f2fe; color: #0284c7; }
+        .bg-green { background: #dcfce7; color: #16a34a; }
+        .bg-purple { background: #f3e8ff; color: #9333ea; }
+        .stat-info h4 { font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 5px; }
+        .stat-info h2 { font-size: 20px; color: #0f172a; }
+
+        /* Chart Layouts */
+        .charts-container { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .chart-card, .full-width-chart { background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .chart-card h3, .full-width-chart h3 { font-size: 16px; color: #0f172a; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+
+        /* --- LAPORAN STYLES --- */
+        .filter-container { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+        .filter-group label { font-size: 13px; color: #64748b; font-weight: 500; }
+        .filter-group input, .filter-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px; }
+        .btn-search { padding: 10px 20px; background-color: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; height: 40px; }
+        .btn-search:hover { background-color: #1d4ed8; }
+
+        .table-responsive { background: #fff; border-radius: 12px; padding: 20px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
+        tr:hover { background-color: #f1f5f9; }
+        .badge-status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-success { background: #dcfce7; color: #16a34a; }
+
+        /* ========================================================= */
+        /* --- PANEL CHAT & NOTIFIKASI MELAYANG (SLIDING) --- */
+        /* ========================================================= */
+        .side-panel { position: fixed; top: 0; right: -400px; width: 350px; height: 100vh; background: #ffffff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); z-index: 1000; transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .side-panel.active { right: 0; }
+        .panel-header { background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .panel-header i { cursor: pointer; font-size: 20px; transition: 0.2s; }
+        .panel-header i:hover { color: #ef4444; }
+        
+        /* CHAT CSS */
+        .chat-contacts { flex: 1; overflow-y: auto; background: #f8fafc; }
+        .contact-item { padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
+        .contact-item:hover { background: #e2e8f0; }
+        .contact-avatar { width: 40px; height: 40px; border-radius: 50%; background: #38bdf8; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; flex-shrink: 0; }
+        .status-online { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: #22c55e; border-radius: 50%; border: 2px solid white; }
+        .contact-info { flex: 1; overflow: hidden; }
+        .contact-info h4 { font-size: 14px; color: #0f172a; margin-bottom: 3px; }
+        .contact-info p { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .chat-room { display: none; flex: 1; flex-direction: column; background: #f1f5f9; }
+        .room-header { background: #f8fafc; padding: 15px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #0f172a; }
+        .room-header i { cursor: pointer; color: #64748b; }
+        .room-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg-bubble { max-width: 80%; padding: 10px 15px; border-radius: 12px; font-size: 13px; line-height: 1.4; }
+        .msg-received { background: white; color: #334155; align-self: flex-start; border-bottom-left-radius: 0; border: 1px solid #e2e8f0; }
+        .msg-sent { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 0; }
+        .room-input { padding: 15px; background: white; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; }
+        .room-input input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 14px; }
+        .room-input button { background: #2563eb; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        /* NOTIF CSS */
+        .notif-list { flex: 1; overflow-y: auto; background: #f8fafc; }
+        .notif-item { padding: 15px 20px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 15px; cursor: pointer; transition: 0.2s; }
+        .notif-item:hover { background: #f1f5f9; }
+        .notif-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: white; }
+        .bg-warning { background: #f59e0b; }
+        .notif-content h4 { font-size: 14px; color: #0f172a; margin-bottom: 5px; }
+        .notif-content p { font-size: 13px; color: #475569; line-height: 1.4; }
+        .notif-time { font-size: 11px; color: #94a3b8; margin-top: 5px; display: block; }
+
+        /* --- RESPONSIVE MOBILE (ANDROID/IOS) --- */
+        @media (max-width: 992px) {
+            .charts-container { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: 0; top: 0; height: 100%; transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .close-sidebar { display: block; }
+            .menu-toggle { display: block; }
+            .user-info { display: none; }
+            .content-area { padding: 15px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .filter-container { flex-direction: column; }
+            .btn-search { width: 100%; }
+            /* Panel geser full screen di mobile */
+            .side-panel { width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>POS Stok RodSel</span>
+            <i class="fa-solid fa-xmark close-sidebar" onclick="toggleSidebar()"></i>
+        </div>
+        <div class="nav-menu">
+            <a class="nav-item active" onclick="showSection('dashboard', this)">
+                <i class="fa-solid fa-chart-line"></i> Dashboard
+            </a>
+            <a class="nav-item" onclick="showSection('laporan', this)">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Laporan
+            </a>
+            <a class="nav-item" onclick="showSection('karyawan', this)">
+                <i class="fa-solid fa-users"></i> Data Karyawan
+            </a>
+            <a class="nav-item" onclick="showSection('absen', this)">
+                <i class="fa-solid fa-user-clock"></i> Data Absen
+            </a>
+            <a class="nav-item" onclick="showSection('supliyer', this)">
+                <i class="fa-solid fa-truck-field"></i> Data Supliyer
+            </a>
+        </div>
+        <div class="logout-btn" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i> Keluar
+        </div>
+    </div>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="topbar-left">
+                <i class="fa-solid fa-bars menu-toggle" onclick="toggleSidebar()"></i>
+                <span id="page-title">Dashboard Utama</span>
+            </div>
+            
+            <div class="topbar-right">
+                <!-- TOMBOL CHAT -->
+                <div class="icon-action" title="Pesan/Chat" onclick="toggleChatPanel()">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span class="badge">3</span>
+                </div>
+                
+                <!-- TOMBOL NOTIFIKASI -->
+                <div class="icon-action" title="Notifikasi" onclick="toggleNotifPanel()">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="badge" id="notif-count">5</span>
+                </div>
+
+                <div class="user-profile">
+                    <div class="user-info">
+                        <div class="user-name" id="display-name">Ferdian Ocktavianto</div>
+                        <div class="user-role" id="display-role">Owner</div>
+                    </div>
+                    <div class="avatar-container">
+                        <img src="https://via.placeholder.com/40" alt="Profil" class="avatar" id="display-photo">
+                        <div class="status-dot" title="Online"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="section-dashboard" class="content-area active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon bg-blue"><i class="fa-solid fa-cart-shopping"></i></div>
+                    <div class="stat-info">
+                        <h4>Transaksi Bulan Ini</h4>
+                        <h2>1,452</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-purple"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="stat-info">
+                        <h4>Total Pendapatan</h4>
+                        <h2>Rp 45.200.000</h2>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-green"><i class="fa-solid fa-chart-pie"></i></div>
+                    <div class="stat-info">
+                        <h4>Keuntungan Bersih</h4>
+                        <h2>Rp 12.800.000</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Grafik Tren Penjualan Harian</h3>
+                    <canvas id="salesChart" height="150"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Proporsi Barang Terjual</h3>
+                    <canvas id="itemsChart" height="200"></canvas>
+                </div>
+            </div>
+
+            <div class="full-width-chart">
+                <h3>Grafik Modal vs Keuntungan Bulanan</h3>
+                <canvas id="profitChart" height="100"></canvas>
+            </div>
+        </div>
+
+        <div id="section-laporan" class="content-area">
+            
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="filter-tanggal">Cari per Tanggal</label>
+                    <input type="date" id="filter-tanggal">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-bulan">Bulan</label>
+                    <select id="filter-bulan">
+                        <option value="">Semua Bulan</option>
+                        <option value="01">Januari</option>
+                        <option value="02">Februari</option>
+                        <option value="03">Maret</option>
+                        <option value="04">April</option>
+                        <option value="05">Mei</option>
+                        <option value="06">Juni</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-tahun">Tahun</label>
+                    <select id="filter-tahun">
+                        <option value="">Semua Tahun</option>
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <button class="btn-search" onclick="cariLaporan()"><i class="fa-solid fa-magnifying-glass"></i> Tampilkan</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal Waktu</th>
+                            <th>No. Struk</th>
+                            <th>Barang Terjual</th>
+                            <th>Qty</th>
+                            <th>Total Harga</th>
+                            <th>Kasir</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabel-laporan-body">
+                        <tr>
+                            <td>1</td>
+                            <td>14 Jun 2026, 10:15</td>
+                            <td>TRX-001</td>
+                            <td>Parfum NO FER Zenith</td>
+                            <td>2</td>
+                            <td>Rp 300.000</td>
+                            <td>Kasir 1</td>
+                            <td><span class="badge-status badge-success">Selesai</span></td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>14 Jun 2026, 11:30</td>
+                            <td>TRX-002</td>
+                            <td>Kopi Susu Warkop</td>
+                            <td>4</td>
+                            <td>Rp 60.000</td>
+                            <td>Kasir 2</td>
+                            <td><span class="badge-status badge-success">Selesai</span></td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>14 Jun 2026, 13:00</td>
+                            <td>TRX-003</td>
+                            <td>Parfum NO FER Midnight</td>
+                            <td>1</td>
+                            <td>Rp 150.000</td>
+                            <td>Kasir 1</td>
+                            <td><span class="badge-status badge-success">Selesai</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="section-karyawan" class="content-area">
+            <div class="table-responsive">
+                <h3>Daftar Karyawan</h3>
+                <p style="margin-top: 10px; color: #64748b;">(Fitur kelola admin, kasir, dan sales akan dikembangkan di sini.)</p>
+            </div>
+        </div>
+
+        <div id="section-absen" class="content-area">
+            <div class="table-responsive">
+                <h3>Data Absensi Hari Ini</h3>
+                <p style="margin-top: 10px; color: #64748b;">(Log check-in/out karyawan dengan fitur kamera/GPS akan muncul di sini.)</p>
+            </div>
+        </div>
+
+        <div id="section-supliyer" class="content-area">
+            <div class="table-responsive">
+                <h3>Daftar Supliyer Barang</h3>
+                <p style="margin-top: 10px; color: #64748b;">(Data vendor yang diinput oleh Admin akan direkap di sini.)</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- PANEL CHAT INTERNAL (Sliding dari Kanan) -->
+    <!-- ============================================== -->
+    <div class="side-panel" id="chatPanel">
+        <div class="panel-header">
+            <span>Inbox Karyawan</span>
+            <i class="fa-solid fa-xmark" onclick="toggleChatPanel()"></i>
+        </div>
+
+        <div class="chat-contacts" id="chatContacts">
+            <div class="contact-item" onclick="bukaRuangChat('Admin Ferdian')">
+                <div class="contact-avatar" style="background:#2563eb;">AD<div class="status-online"></div></div>
+                <div class="contact-info">
+                    <h4>Admin Ferdian</h4>
+                    <p>Laporan penjualan bulan ini aman pak.</p>
+                </div>
+            </div>
+            <div class="contact-item" onclick="bukaRuangChat('Kasir 1')">
+                <div class="contact-avatar" style="background:#8b5cf6;">K1<div class="status-online"></div></div>
+                <div class="contact-info">
+                    <h4>Kasir 1</h4>
+                    <p>Pak, besok saya izin sakit ya.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-room" id="chatRoom">
+            <div class="room-header">
+                <i class="fa-solid fa-arrow-left" onclick="kembaliKeKontakChat()"></i>
+                <h4 id="namaLawanBicara">Nama Kontak</h4>
+            </div>
+            <div class="room-messages" id="chatMessages">
+                <div class="msg-bubble msg-received">Laporan penjualan bulan ini aman pak.</div>
+                <div class="msg-bubble msg-sent">Mantap, tolong dicek juga stok parfum ya.</div>
+            </div>
+            <div class="room-input">
+                <input type="text" id="chatInput" placeholder="Ketik pesan..." onkeypress="if(event.key === 'Enter') kirimPesan()">
+                <button onclick="kirimPesan()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- PANEL NOTIFIKASI (Sliding dari Kanan) -->
+    <!-- ============================================== -->
+    <div class="side-panel" id="notifPanel">
+        <div class="panel-header">
+            <span>Notifikasi Sistem</span>
+            <i class="fa-solid fa-xmark" onclick="toggleNotifPanel()"></i>
+        </div>
+
+        <div class="notif-list">
+            <!-- Notif Uang Masuk / Lunas -->
+            <div class="notif-item">
+                <div class="notif-icon bg-green"><i class="fa-solid fa-money-bill-wave"></i></div>
+                <div class="notif-content">
+                    <h4>Target Tercapai</h4>
+                    <p>Pendapatan hari ini telah melewati target harian sebesar <b>Rp 10.000.000</b>.</p>
+                    <span class="notif-time">Baru saja</span>
+                </div>
+            </div>
+
+            <div class="notif-item">
+                <div class="notif-icon bg-warning"><i class="fa-solid fa-box-open"></i></div>
+                <div class="notif-content">
+                    <h4>Stok Menipis</h4>
+                    <p>Stok <b>Parfum NO FER Zenith</b> tersisa 5 pcs. Admin sedang mengajukan PO ke Supliyer.</p>
+                    <span class="notif-time">30 menit yang lalu</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Sidebar untuk Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('show');
+            if (sidebar.classList.contains('show')) {
+                overlay.style.display = 'block';
+            } else {
+                overlay.style.display = 'none';
+            }
+        }
+
+        // Logika Navigasi Antar Menu
+        function showSection(sectionId, element) {
+            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('section-' + sectionId).classList.add('active');
+            element.classList.add('active');
+
+            const titles = {
+                'dashboard': 'Dashboard Utama',
+                'laporan': 'Laporan Penjualan',
+                'karyawan': 'Data Karyawan',
+                'absen': 'Data Absensi',
+                'supliyer': 'Data Supliyer'
+            };
+            document.getElementById('page-title').innerText = titles[sectionId];
+
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        // --- FUNGSI TOGGLE PANEL CHAT ---
+        function toggleChatPanel() {
+            const chatPanel = document.getElementById('chatPanel');
+            const notifPanel = document.getElementById('notifPanel');
+            
+            if(notifPanel.classList.contains('active')) notifPanel.classList.remove('active');
+            chatPanel.classList.toggle('active');
+        }
+
+        // --- FUNGSI TOGGLE PANEL NOTIFIKASI ---
+        function toggleNotifPanel() {
+            const notifPanel = document.getElementById('notifPanel');
+            const chatPanel = document.getElementById('chatPanel');
+            
+            if(chatPanel.classList.contains('active')) chatPanel.classList.remove('active');
+            notifPanel.classList.toggle('active');
+            
+            document.getElementById('notif-count').style.display = 'none'; // Hilangkan badge merah
+        }
+
+        // --- LOGIKA DALAM CHAT ROOM ---
+        function bukaRuangChat(namaLawan) {
+            document.getElementById('chatContacts').style.display = 'none';
+            document.getElementById('chatRoom').style.display = 'flex';
+            document.getElementById('namaLawanBicara').innerText = namaLawan;
+        }
+
+        function kembaliKeKontakChat() {
+            document.getElementById('chatRoom').style.display = 'none';
+            document.getElementById('chatContacts').style.display = 'block';
+        }
+
+        function kirimPesan() {
+            const input = document.getElementById('chatInput');
+            if(input.value.trim() !== '') {
+                const messageBox = document.getElementById('chatMessages');
+                const newMsg = document.createElement('div');
+                newMsg.className = 'msg-bubble msg-sent';
+                newMsg.innerText = input.value;
+                messageBox.appendChild(newMsg);
+                input.value = '';
+                messageBox.scrollTop = messageBox.scrollHeight;
+            }
+        }
+
+        // Fungsi Filter Laporan Dummy
+        function cariLaporan() {
+            const tgl = document.getElementById('filter-tanggal').value;
+            const bln = document.getElementById('filter-bulan').value;
+            const thn = document.getElementById('filter-tahun').value;
+            alert(`Mencari data untuk:\nTanggal: ${tgl || 'Semua'}\nBulan: ${bln || 'Semua'}\nTahun: ${thn || 'Semua'}\n\n(Nanti akan dihubungkan ke Firebase Query)`);
+        }
+
+        // Fungsi Logout
+        function logout() {
+            if(confirm('Apakah Anda yakin ingin keluar?')) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Render Grafik (Chart.js)
+        window.onload = function() {
+            const ctxSales = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctxSales, {
+                type: 'line',
+                data: {
+                    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+                    datasets: [{
+                        label: 'Penjualan',
+                        data: [25, 32, 28, 41, 39, 55, 61],
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                        borderWidth: 2, fill: true, tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const ctxItems = document.getElementById('itemsChart').getContext('2d');
+            new Chart(ctxItems, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Parfum Zenith', 'Parfum Midnight', 'Kopi', 'Lainnya'],
+                    datasets: [{
+                        data: [40, 25, 20, 15],
+                        backgroundColor: ['#38bdf8', '#818cf8', '#34d399', '#fbbf24'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+            });
+
+            const ctxProfit = document.getElementById('profitChart').getContext('2d');
+            new Chart(ctxProfit, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                    datasets: [
+                        { label: 'Modal', data: [15, 16.5, 14, 18, 17.5, 19], backgroundColor: '#94a3b8', borderRadius: 4 },
+                        { label: 'Untung', data: [5, 6.2, 4.8, 7.5, 8.1, 9.5], backgroundColor: '#22c55e', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        };
+    </script>
+</body>
+</html>
