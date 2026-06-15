@@ -35,7 +35,7 @@
         
         .icon-action { position: relative; font-size: 20px; color: #64748b; cursor: pointer; transition: 0.2s; padding: 5px; }
         .icon-action:hover { color: #0f172a; }
-        .badge { position: absolute; top: -2px; right: -5px; background-color: #ef4444; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 50%; border: 2px solid #ffffff; }
+        .badge { position: absolute; top: -2px; right: -5px; background-color: #ef4444; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 50%; border: 2px solid #ffffff; display: none;}
 
         .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .user-info { text-align: right; }
@@ -85,7 +85,7 @@
         #videoElement { width: 100%; max-width: 400px; border-radius: 12px; border: 3px solid #cbd5e1; background: #000; }
         #canvasElement { display: none; width: 100%; max-width: 400px; border-radius: 12px; border: 3px solid #22c55e; }
 
-        /* --- FITUR CHAT PANEL --- */
+        /* --- FITUR CHAT & NOTIF PANEL --- */
         .chat-panel { position: fixed; top: 0; right: -400px; width: 350px; height: 100vh; background: #ffffff; box-shadow: -5px 0 15px rgba(0,0,0,0.1); z-index: 1000; transition: right 0.3s ease; display: flex; flex-direction: column; }
         .chat-panel.active { right: 0; }
         .chat-header { background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
@@ -183,9 +183,9 @@
                     <option value="sales">Akses: Sales</option>
                 </select>
                 
-                <!-- ICON CHAT & NOTIF -->
-                <div class="icon-action" onclick="toggleChatPanel()"><i class="fa-regular fa-comment-dots"></i><span class="badge">1</span></div>
-                <div class="icon-action"><i class="fa-regular fa-bell"></i><span class="badge">2</span></div>
+                <!-- ICON CHAT & NOTIF (Lonceng Diperbarui) -->
+                <div class="icon-action" onclick="toggleChatPanel()"><i class="fa-regular fa-comment-dots"></i></div>
+                <div class="icon-action" onclick="toggleNotifPanel()"><i class="fa-regular fa-bell"></i><span class="badge" id="notifBadge">0</span></div>
                 
                 <div class="user-profile">
                     <div class="user-info">
@@ -360,7 +360,7 @@
             </div>
         </div>
 
-        <!-- 7. REQUEST PO ADMIN -->
+        <!-- 7. REQUEST PO ADMIN (Tombol Diperbarui Mengirim Notif ke DB) -->
         <div id="section-po" class="content-area">
             <div class="card">
                 <h3>Request Purchase Order (PO) ke Admin</h3>
@@ -370,16 +370,16 @@
                         <thead><tr><th>Nama Barang</th><th>Stok Sistem</th><th>Stok Fisik (Edit)</th><th>Qty Order</th><th>Aksi</th></tr></thead>
                         <tbody>
                             <tr>
-                                <td>Parfum NO FER Zenith</td>
+                                <td id="po-nama-barang">Parfum NO FER Zenith</td>
                                 <td><input type="number" class="form-control" value="5" disabled style="width: 80px;"></td>
                                 <td><input type="number" class="form-control" value="5" style="width: 80px;"></td>
-                                <td><input type="number" class="form-control" placeholder="Jml..." style="width: 80px;"></td>
+                                <td><input type="number" id="po-qty" class="form-control" placeholder="Jml..." style="width: 80px;"></td>
                                 <td><button class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Tambah</button></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <button class="btn btn-success" style="margin-top: 15px;" onclick="alert('PO Dikirim! Tunggu notifikasi ACC dari Admin.')"><i class="fa-solid fa-paper-plane"></i> Kirim PO ke Admin</button>
+                <button class="btn btn-success" style="margin-top: 15px;" onclick="kirimPOkeAdmin()"><i class="fa-solid fa-paper-plane"></i> Kirim PO ke Admin</button>
             </div>
         </div>
 
@@ -401,13 +401,10 @@
 
     <!-- --- PANEL CHAT INTERNAL --- -->
     <div class="chat-panel" id="chatPanel">
-        <!-- Header Chat -->
         <div class="chat-header">
             <span>Komunikasi Internal</span>
             <i class="fa-solid fa-xmark" onclick="toggleChatPanel()"></i>
         </div>
-
-        <!-- Daftar Kontak -->
         <div class="chat-contacts" id="chatContacts">
             <div class="contact-item" onclick="bukaRuangChat('Owner RodSel')">
                 <div class="contact-avatar" style="background:#f59e0b;">OW<div class="status-online"></div></div>
@@ -416,23 +413,7 @@
                     <p>Siap pak, laporan sudah saya kirim...</p>
                 </div>
             </div>
-            <div class="contact-item" onclick="bukaRuangChat('Admin Ferdian')">
-                <div class="contact-avatar" style="background:#2563eb;">AD<div class="status-online"></div></div>
-                <div class="contact-info">
-                    <h4>Admin Ferdian</h4>
-                    <p>Tolong ACC PO barang kosong ya.</p>
-                </div>
-            </div>
-            <div class="contact-item" onclick="bukaRuangChat('Sales Budi')">
-                <div class="contact-avatar" style="background:#10b981;">SB<div class="status-online"></div></div>
-                <div class="contact-info">
-                    <h4>Sales Budi</h4>
-                    <p>Mas, nota TRX-004 tolong dibayar kasir.</p>
-                </div>
-            </div>
         </div>
-
-        <!-- Ruang Obrolan (Hidden by default) -->
         <div class="chat-room" id="chatRoom">
             <div class="room-header">
                 <i class="fa-solid fa-arrow-left" onclick="kembaliKeKontakChat()"></i>
@@ -440,7 +421,6 @@
             </div>
             <div class="room-messages" id="chatMessages">
                 <div class="msg-bubble msg-received">Halo, apakah stok cat putih masih ada?</div>
-                <div class="msg-bubble msg-sent">Masih aman mas, sisa 5 pail di gudang.</div>
             </div>
             <div class="room-input">
                 <input type="text" id="chatInput" placeholder="Ketik pesan..." onkeypress="if(event.key === 'Enter') kirimPesan()">
@@ -449,8 +429,19 @@
         </div>
     </div>
 
+    <!-- --- PANEL NOTIFIKASI BARU (Slide Kanan) --- -->
+    <div class="chat-panel" id="notifPanel">
+        <div class="chat-header">
+            <span>Pemberitahuan Sistem</span>
+            <i class="fa-solid fa-xmark" onclick="toggleNotifPanel()"></i>
+        </div>
+        <div id="notifListContainer" style="padding:15px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1; background:#f8fafc;">
+            <!-- Notif akan dimuat di sini oleh Firestore -->
+            <p style="text-align:center; color:#64748b; font-size:13px; margin-top:20px;">Memuat notifikasi...</p>
+        </div>
+    </div>
+
     <!-- AREA CETAK TERSEMBUNYI -->
-    
     <!-- 1. Area Cetak Barcode -->
     <div id="print-barcode" class="print-container format-thermal">
         <div style="text-align: center; margin-bottom: 10px;">
@@ -531,7 +522,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA BAWAAN -->
+    <!-- SCRIPT LOGIKA UI BAWAAN -->
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
@@ -565,9 +556,16 @@
         }
         ubahRole();
 
+        // Diperbarui agar tidak tabrakan dengan panel notif
         function toggleChatPanel() {
             document.getElementById('chatPanel').classList.toggle('active');
+            document.getElementById('notifPanel').classList.remove('active');
         }
+        function toggleNotifPanel() {
+            document.getElementById('notifPanel').classList.toggle('active');
+            document.getElementById('chatPanel').classList.remove('active');
+        }
+
         function bukaRuangChat(namaLawan) {
             document.getElementById('chatContacts').style.display = 'none';
             document.getElementById('chatRoom').style.display = 'flex';
@@ -637,10 +635,12 @@
         }
     </script>
 
-    <!-- SCRIPT FIREBASE LOGOUT (YANG DITAMBAHKAN) -->
+    <!-- SCRIPT FIREBASE LOGOUT & NOTIFIKASI REAL-TIME -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
         import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        // Import Firestore khusus untuk Notifikasi
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
@@ -653,7 +653,80 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
+        // ==========================================
+        // 1. FUNGSI KIRIM PO KE ADMIN (FIREBASE DB)
+        // ==========================================
+        window.kirimPOkeAdmin = async function() {
+            const namaBarang = document.getElementById('po-nama-barang').innerText;
+            const qtyBarang = document.getElementById('po-qty').value || "1";
+
+            try {
+                // Menambah data notifikasi ke Database
+                await addDoc(collection(db, "notifikasi"), {
+                    judul: "Permintaan PO Baru",
+                    pesan: `Kasir/Sales meminta pengadaan ${qtyBarang} pcs ${namaBarang}.`,
+                    dari: "Kasir/Sales",
+                    untuk: "admin", // Dikirim ke admin
+                    waktu: serverTimestamp(),
+                    dibaca: false
+                });
+                
+                Swal.fire('Terkirim!', 'Permintaan PO sudah masuk ke Database Admin.', 'success');
+                document.getElementById('po-qty').value = ''; // Reset input
+            } catch(e) {
+                console.error("Gagal mengirim PO:", e);
+                Swal.fire('Error', 'Gagal mengirim PO, pastikan koneksi internet stabil.', 'error');
+            }
+        };
+
+        // ==========================================
+        // 2. LISTENER NOTIFIKASI REAL-TIME
+        // ==========================================
+        const qNotif = query(collection(db, "notifikasi"), orderBy("waktu", "desc"));
+        
+        onSnapshot(qNotif, (snapshot) => {
+            const containerNotif = document.getElementById('notifListContainer');
+            const badgeLonceng = document.getElementById('notifBadge');
+            
+            let unreadCount = 0;
+            let htmlContent = '';
+
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                
+                // Cek apakah notif ini ditujukan untuk "semua" atau khusus "kasir" / "sales"
+                if(data.untuk === 'semua' || data.untuk === 'kasir' || data.untuk === 'sales') {
+                    unreadCount++; // Anggap semuanya unread dulu untuk demonya
+                    
+                    // Konversi Waktu Firebase ke Jam/Menit lokal
+                    const waktuNotif = data.waktu ? new Date(data.waktu.toDate()).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : 'Baru saja';
+                    
+                    htmlContent += `
+                        <div style="background:#fff; padding:15px; border-radius:8px; border-left:4px solid #38bdf8; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+                            <h4 style="margin-bottom:5px; font-size:14px; color:#0f172a;">${data.judul}</h4>
+                            <p style="font-size:12px; color:#475569; margin-bottom:5px;">${data.pesan}</p>
+                            <span style="font-size:10px; color:#94a3b8;"><i class="fa-regular fa-clock"></i> ${waktuNotif}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            if(htmlContent === '') {
+                htmlContent = '<p style="text-align:center; color:#64748b; font-size:13px; margin-top:20px;">Tidak ada notifikasi sistem.</p>';
+            }
+
+            containerNotif.innerHTML = htmlContent;
+            
+            // Perbarui Angka Merah di Lonceng
+            badgeLonceng.innerText = unreadCount;
+            badgeLonceng.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+        });
+
+        // ==========================================
+        // 3. FUNGSI LOGOUT AMAN
+        // ==========================================
         const btnLogout = document.getElementById('btnLogout');
         if (btnLogout) {
             btnLogout.addEventListener('click', (e) => {
