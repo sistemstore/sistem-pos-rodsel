@@ -184,7 +184,6 @@
                 <i class="fa-solid fa-file-invoice"></i> Invoice Lunas
             </a>
         </div>
-        <!-- TOMBOL LOGOUT DIPERBARUI DENGAN ID -->
         <div class="logout-btn" id="btnLogout">
             <i class="fa-solid fa-right-from-bracket"></i> Keluar
         </div>
@@ -203,8 +202,9 @@
                 <div class="icon-action" onclick="toggleNotifPanel()"><i class="fa-regular fa-bell"></i><span class="badge" id="notif-po">3</span></div>
                 <div class="user-profile">
                     <div class="user-info">
-                        <div class="user-name">Ferdian Ocktavianto</div>
-                        <div class="user-role">Admin</div>
+                        <!-- ID ditambahkan agar bisa diganti oleh Firebase -->
+                        <div class="user-name" id="display-name">Memuat...</div>
+                        <div class="user-role" id="display-role">Admin</div>
                     </div>
                     <div class="avatar-container">
                         <img src="https://via.placeholder.com/40" alt="Profil" class="avatar">
@@ -258,11 +258,12 @@
                         <div class="form-group"><label>Diskon (%)</label><input type="number" id="diskon" value="0"></div>
                         <div class="form-group"><label>Stok Awal (Qty)</label><input type="number" id="qty" placeholder="0" required></div>
                     </div>
-                    <button type="button" class="btn btn-primary" onclick="simpanBarangKeFirebase()"><i class="fa-solid fa-save"></i> Simpan ke Database</button>
+                    <!-- Tombol memanggil fungsi window.simpanBarang -->
+                    <button type="button" class="btn btn-primary" onclick="window.simpanBarang()"><i class="fa-solid fa-save"></i> Simpan ke Database</button>
                 </form>
             </div>
 
-            <!-- TABEL DAFTAR STOK BARANG -->
+            <!-- TABEL DAFTAR STOK BARANG (Akan diisi otomatis oleh Firebase) -->
             <div class="card">
                 <h3>Daftar Stok Barang</h3>
                 <div class="table-responsive">
@@ -280,32 +281,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabel-daftar-barang">
-                            <tr>
-                                <td>Parfum</td>
-                                <td>Parfum NO FER Zenith</td>
-                                <td>89912345601</td>
-                                <td>Rp 100.000</td>
-                                <td>Rp 150.000</td>
-                                <td>0%</td>
-                                <td><span style="font-weight: bold; color: #16a34a;">145</span></td>
-                                <td>
-                                    <button class="btn btn-warning btn-sm"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Minuman</td>
-                                <td>Kopi Susu Warkop Bang FER</td>
-                                <td>89912345602</td>
-                                <td>Rp 10.000</td>
-                                <td>Rp 15.000</td>
-                                <td>0%</td>
-                                <td><span style="font-weight: bold; color: #16a34a;">85</span></td>
-                                <td>
-                                    <button class="btn btn-warning btn-sm"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>
-                                </td>
-                            </tr>
+                            <!-- Data dimasukkan dari JavaScript Firebase -->
                         </tbody>
                     </table>
                 </div>
@@ -445,9 +421,7 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
     <!-- PANEL CHAT & NOTIF -->
-    <!-- ============================================== -->
     <div class="side-panel" id="chatPanel">
         <div class="panel-header"><span>Komunikasi Internal</span><i class="fa-solid fa-xmark" onclick="toggleChatPanel()"></i></div>
         <div class="chat-contacts" id="chatContacts">
@@ -470,9 +444,7 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- MODAL MODERN & AREA PRINT KHUSUS -->
-    <!-- ============================================== -->
+    <!-- MODAL & PRINT AREA -->
     <div id="modalPrint" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
         <div style="background:white; padding:25px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
             <h3 id="modalTitle" style="margin-bottom:15px; color:#0f172a;">Cetak Dokumen</h3>
@@ -505,26 +477,10 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA BAWAAN TEMPLATE -->
+    <!-- SCRIPT LOGIKA UI -->
     <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.toggle('show');
-            overlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none';
-        }
-
-        function showSection(sectionId, element) {
-            document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById('section-' + sectionId).classList.add('active');
-            element.classList.add('active');
-            
-            const titles = { 'dashboard': 'Dashboard Admin', 'barang': 'Manajemen Data Barang', 'absen': 'Absensi Selfie Karyawan', 'supliyer': 'Data Supliyer', 'po-sales': 'Purchase Order Sales', 'masuk': 'Barang Masuk', 'keluar': 'Barang Keluar', 'invoice': 'Cetak Invoice' };
-            document.getElementById('page-title').innerText = titles[sectionId];
-            if (window.innerWidth <= 768) toggleSidebar();
-        }
-
+        function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebarOverlay'); sidebar.classList.toggle('show'); overlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none'; }
+        function showSection(sectionId, element) { document.querySelectorAll('.content-area').forEach(el => el.classList.remove('active')); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); document.getElementById('section-' + sectionId).classList.add('active'); element.classList.add('active'); const titles = { 'dashboard': 'Dashboard Admin', 'barang': 'Manajemen Data Barang', 'absen': 'Absensi Selfie Karyawan', 'supliyer': 'Data Supliyer', 'po-sales': 'Purchase Order Sales', 'masuk': 'Barang Masuk', 'keluar': 'Barang Keluar', 'invoice': 'Cetak Invoice' }; document.getElementById('page-title').innerText = titles[sectionId]; if (window.innerWidth <= 768) toggleSidebar(); }
         function toggleChatPanel() { document.getElementById('chatPanel').classList.toggle('active'); document.getElementById('notifPanel').classList.remove('active'); }
         function toggleNotifPanel() { document.getElementById('notifPanel').classList.toggle('active'); document.getElementById('chatPanel').classList.remove('active'); document.getElementById('notif-po').style.display = 'none'; }
         function bukaRuangChat(namaLawan) { document.getElementById('chatContacts').style.display = 'none'; document.getElementById('chatRoom').style.display = 'flex'; document.getElementById('namaLawanBicara').innerText = namaLawan; }
@@ -532,67 +488,17 @@
         function kirimPesan() { const input = document.getElementById('chatInput'); if(input.value.trim() !== '') { const messageBox = document.getElementById('chatMessages'); const newMsg = document.createElement('div'); newMsg.className = 'msg-bubble msg-sent'; newMsg.innerText = input.value; messageBox.appendChild(newMsg); input.value = ''; messageBox.scrollTop = messageBox.scrollHeight; } }
 
         let targetPrintId = "";
-
-        function bukaModalPO(noPO, namaBarang, qty) {
-            document.getElementById('modalTitle').innerText = "Cetak PO: " + noPO;
-            document.getElementById('po-val').innerText = noPO;
-            document.getElementById('brg-val').innerText = namaBarang;
-            document.getElementById('qty-val').innerText = qty;
-            document.getElementById('waktu-val').innerText = new Date().toLocaleDateString('id-ID');
-            targetPrintId = "print-po-area";
-            document.getElementById('modalPrint').style.display = 'flex';
-        }
-
-        function bukaModalInvoice() {
-            document.getElementById('modalTitle').innerText = "Cetak Invoice Lunas";
-            targetPrintId = "invoice-print-area";
-            document.getElementById('modalPrint').style.display = 'flex';
-        }
-
-        function eksekusiPrint() {
-            document.getElementById('modalPrint').style.display = 'none';
-            const areaPrint = document.getElementById(targetPrintId);
-            document.body.classList.add('print-active');
-            areaPrint.classList.add('print-active');
-            window.print();
-            document.body.classList.remove('print-active');
-            areaPrint.classList.remove('print-active');
-        }
-
-        function downloadPDF() {
-            alert("Tips Download PDF:\nSaat jendela Print muncul nanti, ubah kolom 'Destination / Tujuan' menjadi 'Save as PDF'.");
-            eksekusiPrint();
-        }
+        function bukaModalPO(noPO, namaBarang, qty) { document.getElementById('modalTitle').innerText = "Cetak PO: " + noPO; document.getElementById('po-val').innerText = noPO; document.getElementById('brg-val').innerText = namaBarang; document.getElementById('qty-val').innerText = qty; document.getElementById('waktu-val').innerText = new Date().toLocaleDateString('id-ID'); targetPrintId = "print-po-area"; document.getElementById('modalPrint').style.display = 'flex'; }
+        function bukaModalInvoice() { document.getElementById('modalTitle').innerText = "Cetak Invoice Lunas"; targetPrintId = "invoice-print-area"; document.getElementById('modalPrint').style.display = 'flex'; }
+        function eksekusiPrint() { document.getElementById('modalPrint').style.display = 'none'; const areaPrint = document.getElementById(targetPrintId); document.body.classList.add('print-active'); areaPrint.classList.add('print-active'); window.print(); document.body.classList.remove('print-active'); areaPrint.classList.remove('print-active'); }
+        function downloadPDF() { alert("Tips Download PDF:\nSaat jendela Print muncul nanti, ubah kolom 'Destination / Tujuan' menjadi 'Save as PDF'."); eksekusiPrint(); }
 
         function accPO(rowId, noPO, namaBarang, qty) {
             if(confirm(`Yakin ingin menyetujui ${noPO} (${namaBarang})?`)) {
-                const statusBadge = document.querySelector(`#${rowId} .status-badge`);
-                statusBadge.className = 'status-badge status-acc';
-                statusBadge.innerText = 'Di-ACC';
-                document.getElementById(rowId.replace('row', 'aksi')).innerHTML = `<span style="color:#16a34a; font-size:12px; font-weight:bold; margin-right:8px;"><i class="fa-solid fa-check"></i> Disetujui</span><button class="btn btn-primary btn-sm" onclick="bukaModalPO('${noPO}', '${namaBarang}', ${qty})"><i class="fa-solid fa-print"></i> Cetak</button>`;
-                const tabelMasuk = document.getElementById('tabel-barang-masuk');
-                if(tabelMasuk.innerText.includes('Belum ada')) tabelMasuk.innerHTML = ''; 
-                const today = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'});
-                tabelMasuk.innerHTML += `<tr><td>${today}</td><td>${noPO}</td><td>${namaBarang}</td><td>${qty}</td><td><span style="color:#16a34a; font-weight:bold;">Selesai (ACC)</span></td></tr>`;
-                let notif = parseInt(document.getElementById('notif-po').innerText);
-                document.getElementById('notif-po').innerText = notif > 0 ? notif - 1 : 0;
+                const statusBadge = document.querySelector(`#${rowId} .status-badge`); statusBadge.className = 'status-badge status-acc'; statusBadge.innerText = 'Di-ACC'; document.getElementById(rowId.replace('row', 'aksi')).innerHTML = `<span style="color:#16a34a; font-size:12px; font-weight:bold; margin-right:8px;"><i class="fa-solid fa-check"></i> Disetujui</span><button class="btn btn-primary btn-sm" onclick="bukaModalPO('${noPO}', '${namaBarang}', ${qty})"><i class="fa-solid fa-print"></i> Cetak</button>`; const tabelMasuk = document.getElementById('tabel-barang-masuk'); if(tabelMasuk.innerText.includes('Belum ada')) tabelMasuk.innerHTML = ''; const today = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'}); tabelMasuk.innerHTML += `<tr><td>${today}</td><td>${noPO}</td><td>${namaBarang}</td><td>${qty}</td><td><span style="color:#16a34a; font-weight:bold;">Selesai (ACC)</span></td></tr>`; let notif = parseInt(document.getElementById('notif-po').innerText); document.getElementById('notif-po').innerText = notif > 0 ? notif - 1 : 0;
             }
         }
-
-        function tolakPO(rowId) {
-            if(confirm("Tolak pengajuan PO ini?")) {
-                document.querySelector(`#${rowId} .status-badge`).className = 'status-badge status-tolak';
-                document.querySelector(`#${rowId} .status-badge`).innerText = 'Ditolak';
-                document.getElementById(rowId.replace('row', 'aksi')).innerHTML = '<span style="color:#ef4444; font-size:12px;">Ditolak</span>';
-            }
-        }
-
-        function simpanBarangKeFirebase() {
-            const kat = document.getElementById('kategori').value, nm = document.getElementById('namaProduk').value, bc = document.getElementById('barcode').value||'-', hm = document.getElementById('hargaModal').value, hj = document.getElementById('hargaJual').value, dsc = document.getElementById('diskon').value||'0', qt = document.getElementById('qty').value;
-            if(!kat || !nm || !hm || !hj || !qt) return alert("Harap lengkapi semua kolom yang wajib!");
-            document.getElementById('tabel-daftar-barang').innerHTML += `<tr><td>${kat}</td><td>${nm}</td><td>${bc}</td><td>Rp ${parseInt(hm).toLocaleString('id-ID')}</td><td>Rp ${parseInt(hj).toLocaleString('id-ID')}</td><td>${dsc}%</td><td><span style="font-weight:bold; color:#16a34a;">${qt}</span></td><td><button class="btn btn-warning btn-sm"><i class="fa-solid fa-pen"></i></button> <button class="btn btn-danger btn-sm" onclick="this.parentElement.parentElement.remove()"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-            alert("Data sukses ditambahkan!"); document.getElementById('formBarang').reset();
-        }
+        function tolakPO(rowId) { if(confirm("Tolak pengajuan PO ini?")) { document.querySelector(`#${rowId} .status-badge`).className = 'status-badge status-tolak'; document.querySelector(`#${rowId} .status-badge`).innerText = 'Ditolak'; document.getElementById(rowId.replace('row', 'aksi')).innerHTML = '<span style="color:#ef4444; font-size:12px;">Ditolak</span>'; } }
         function simpanSupliyer() { alert("Supliyer disimpan!"); document.getElementById('formSupliyer').reset(); }
         let streamActive = null;
         async function bukaKamera() { const video = document.getElementById('videoElement'); video.style.display = 'block'; streamActive = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); video.srcObject = streamActive; }
@@ -600,23 +506,137 @@
         function kirimWA() { prompt("Nomor WA:") && window.open('https://wa.me/?text=InvoiceLunas', '_blank'); }
     </script>
 
-    <!-- SCRIPT FIREBASE LOGOUT (YANG DITAMBAHKAN) -->
+    <!-- SCRIPT FIREBASE LOGOUT, SINKRONISASI BARANG & PROFIL -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
+        // Konfigurasi Baru
         const firebaseConfig = {
-            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
-            authDomain: "rodsel-pos-online.firebaseapp.com",
-            projectId: "rodsel-pos-online",
-            storageBucket: "rodsel-pos-online.firebasestorage.app",
-            messagingSenderId: "607558554103",
-            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+            apiKey: "AIzaSyDNZzKTvJMXL4Q07k39DV9Wbdejp9w9oSU",
+            authDomain: "sistem-pos-rodsel.firebaseapp.com",
+            databaseURL: "https://sistem-pos-rodsel-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sistem-pos-rodsel",
+            storageBucket: "sistem-pos-rodsel.firebasestorage.app",
+            messagingSenderId: "504265377102",
+            appId: "1:504265377102:web:14f19b812294fe4eb6ca1f",
+            measurementId: "G-SKBMZH0W7E"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
+        // 1. CEK LOGIN & AMBIL NAMA ADMIN
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    document.getElementById('display-name').innerText = userDoc.data().nama;
+                }
+            } else {
+                window.location.replace('index.html');
+            }
+        });
+
+        // 2. FUNGSI SIMPAN BARANG KE FIRESTORE
+        window.simpanBarang = async function() {
+            const btn = event.target;
+            const kat = document.getElementById('kategori').value;
+            const nm = document.getElementById('namaProduk').value;
+            const bc = document.getElementById('barcode').value || '-';
+            const hm = document.getElementById('hargaModal').value;
+            const hj = document.getElementById('hargaJual').value;
+            const dsc = document.getElementById('diskon').value || '0';
+            const qt = document.getElementById('qty').value;
+
+            if(!kat || !nm || !hm || !hj || !qt) {
+                return Swal.fire('Oops!', 'Harap lengkapi semua kolom yang wajib!', 'warning');
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = "Menyimpan...";
+
+            try {
+                // Simpan ke koleksi 'barang' di Firestore
+                await addDoc(collection(db, "barang"), {
+                    kategori: kat,
+                    namaProduk: nm,
+                    barcode: bc,
+                    hargaModal: Number(hm),
+                    hargaJual: Number(hj),
+                    diskon: Number(dsc),
+                    stok: Number(qt),
+                    tanggalDibuat: new Date()
+                });
+
+                Swal.fire('Berhasil!', 'Barang tersimpan ke Database Pusat.', 'success');
+                document.getElementById('formBarang').reset();
+            } catch (e) {
+                console.error("Gagal simpan barang:", e);
+                Swal.fire('Error', 'Gagal menyimpan barang. Cek koneksi internet.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-save"></i> Simpan ke Database';
+            }
+        };
+
+        // 3. TAMPILKAN DATA BARANG DARI FIRESTORE SECARA REAL-TIME
+        const tabelBarang = document.getElementById('tabel-daftar-barang');
+        onSnapshot(collection(db, "barang"), (snapshot) => {
+            tabelBarang.innerHTML = ""; // Bersihkan tabel setiap ada perubahan
+            
+            if(snapshot.empty) {
+                tabelBarang.innerHTML = "<tr><td colspan='8' style='text-align:center;'>Belum ada data barang.</td></tr>";
+                return;
+            }
+
+            snapshot.forEach((docSnap) => {
+                const b = docSnap.data();
+                const id = docSnap.id;
+                
+                tabelBarang.innerHTML += `
+                    <tr>
+                        <td>${b.kategori}</td>
+                        <td>${b.namaProduk}</td>
+                        <td>${b.barcode}</td>
+                        <td>Rp ${b.hargaModal.toLocaleString('id-ID')}</td>
+                        <td>Rp ${b.hargaJual.toLocaleString('id-ID')}</td>
+                        <td>${b.diskon}%</td>
+                        <td><span style="font-weight:bold; color:#16a34a;">${b.stok}</span></td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="alert('Fitur edit segera hadir')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="hapusBarang('${id}')"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+
+        // 4. FUNGSI HAPUS BARANG
+        window.hapusBarang = async function(id) {
+            Swal.fire({
+                title: 'Hapus Barang?',
+                text: "Data akan hilang selamanya dari sistem!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await deleteDoc(doc(db, "barang", id));
+                        Swal.fire('Terhapus!', 'Barang berhasil dihapus.', 'success');
+                    } catch (e) {
+                        Swal.fire('Error', 'Gagal menghapus barang.', 'error');
+                    }
+                }
+            });
+        };
+
+        // 5. LOGOUT
         const btnLogout = document.getElementById('btnLogout');
         if (btnLogout) {
             btnLogout.addEventListener('click', (e) => {
@@ -628,15 +648,11 @@
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Ya, Keluar!',
-                    cancelButtonText: 'Batal'
+                    confirmButtonText: 'Ya, Keluar!'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         signOut(auth).then(() => {
                             window.location.replace('index.html');
-                        }).catch((error) => {
-                            console.error("Gagal logout:", error);
-                            Swal.fire('Gagal!', 'Terjadi kesalahan saat mencoba keluar.', 'error');
                         });
                     }
                 });
