@@ -164,7 +164,9 @@
             }
         });
 
-        // REGISTRASI
+        // =====================================
+        // FUNGSI REGISTRASI (DIPERBAIKI)
+        // =====================================
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btnSubmit = document.getElementById('btn-register-submit');
@@ -180,42 +182,59 @@
                 const password = document.getElementById('reg-password').value;
                 const photoFile = document.getElementById('reg-photo').files[0];
 
+                // 1. Buat Akun
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
+                // 2. Upload Foto (Bisa di-skip jika gagal agar tidak macet)
                 let photoURL = "";
                 if (photoFile) {
-                    const imageRef = storageRef(storage, `profile_pictures/${user.uid}`);
-                    await uploadBytes(imageRef, photoFile);
-                    photoURL = await getDownloadURL(imageRef);
+                    try {
+                        const imageRef = storageRef(storage, `profile_pictures/${user.uid}`);
+                        await uploadBytes(imageRef, photoFile);
+                        photoURL = await getDownloadURL(imageRef);
+                    } catch (uploadError) {
+                        console.warn("Upload foto gagal, lanjut tanpa foto.");
+                    }
                 }
 
-                await setDoc(doc(db, "users", user.uid), {
+                // 3. Simpan ke Firestore (Diberi Batas Waktu 10 Detik)
+                const simpanKeDB = setDoc(doc(db, "users", user.uid), {
                     nama: firstName + " " + lastName, 
                     namaDepan: firstName,
                     namaBelakang: lastName,
                     email: email,
-                    role: role.toLowerCase(), 
+                    role: role.toLowerCase().trim(),
                     photoURL: photoURL,
                     tanggalDaftar: new Date()
                 });
 
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Pendaftaran sukses! Silakan Masuk.', timer: 2000, showConfirmButton: false });
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firestore")), 10000));
+                
+                await Promise.race([simpanKeDB, timeout]); // Menunggu mana yang lebih dulu selesai
+
+                // 4. Jika Sukses, Reset Form & Pindah ke Halaman Login
+                Swal.fire({ icon: 'success', title: 'Pendaftaran Berhasil!', text: 'Silakan masuk menggunakan akun Anda.', timer: 2500, showConfirmButton: false });
                 
                 document.getElementById('registerForm').reset();
                 document.getElementById('profilePreview').style.backgroundImage = 'none';
                 document.getElementById('profilePreview').innerHTML = '<span>📷</span>';
                 
+                // Pindah ke Tab Login
                 setTimeout(() => { switchTab('login'); }, 1500);
 
             } catch (error) {
                 console.error("Error Registrasi:", error);
                 let pesanError = error.message;
+                
                 if (error.code === 'auth/email-already-in-use') {
-                    pesanError = "Email ini sudah pernah didaftarkan. Silakan langsung login atau gunakan email lain.";
+                    pesanError = "Email ini sudah pernah didaftarkan. Silakan langsung login.";
                 } else if (error.code === 'permission-denied') {
-                    pesanError = "Koneksi ke Database ditolak! Pastikan Rules Firestore sudah disetting 'allow read, write: if true;'";
+                    pesanError = "Gagal menyimpan profil. Aturan Database Firebase Anda belum diizinkan.";
+                } else if (error.message === "Timeout Firestore") {
+                    pesanError = "Koneksi ke Database sangat lambat atau Firestore belum dibuat.";
                 }
+                
                 Swal.fire('Pendaftaran Gagal', pesanError, 'error');
             } finally {
                 btnSubmit.disabled = false;
@@ -223,7 +242,9 @@
             }
         });
 
-        // LOGIN
+        // =====================================
+        // FUNGSI LOGIN / MASUK (DIPERBAIKI)
+        // =====================================
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btnSubmit = document.getElementById('btn-login-submit');
@@ -235,36 +256,52 @@
                 const email = document.getElementById('login-email').value;
                 const password = document.getElementById('login-password').value;
 
+                // 1. Verifikasi Email & Password
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 
-                const docSnap = await getDoc(doc(db, "users", user.uid));
+                // 2. Ambil data jabatan dengan batas waktu 10 detik
+                const ambilDariDB = getDoc(doc(db, "users", user.uid));
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firestore")), 10000));
+                
+                const docSnap = await Promise.race([ambilDariDB, timeout]);
                 
                 if (docSnap.exists()) {
-                    const userRole = docSnap.data().role.toLowerCase();
+                    const userData = docSnap.data();
+                    const userRole = (userData.role || "").toLowerCase().trim();
+                    
                     Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', showConfirmButton: false, timer: 1000 });
 
-                    // ROUTING BERDASARKAN FILE YANG ADA DI GITHUB ABANG
+                    // 3. Routing ke Dashboard Masing-Masing
                     setTimeout(() => {
                         if (userRole === 'owner') {
-                            window.location.href = 'dashboard-owner.html';
+                            window.location.replace('dashboard-owner.html');
                         } else if (userRole === 'admin') {
-                            window.location.href = 'dashboard-admin.html';
+                            window.location.replace('dashboard-admin.html');
                         } else if (userRole === 'kasir' || userRole === 'sales') {
-                            // Kasir dan Sales diarahkan ke file gabungan ini
-                            window.location.href = 'dashboard-kasir-sales.html';
+                            window.location.replace('dashboard-kasir-sales.html');
                         } else {
-                            Swal.fire('Error', 'Jabatan tidak dikenali.', 'error');
+                            Swal.fire('Error', 'Jabatan Anda tidak dikenali.', 'error');
                         }
                     }, 1000);
+
                 } else {
-                    Swal.fire('Oops!', 'Akun Anda belum tersimpan sempurna di Database. Lapor ke Admin!', 'error');
+                    Swal.fire('Oops!', 'Pendaftaran belum sempurna. Data profil tidak ada di Database.', 'error');
                 }
 
             } catch (error) {
                 console.error("Error Login:", error);
-                let pesanLoginError = "Email atau Kata Sandi salah!";
-                Swal.fire('Login Gagal', pesanLoginError, 'error');
+                let pesanLoginError = "Terjadi kesalahan sistem.";
+                
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+                    pesanLoginError = "Email atau Kata Sandi salah!";
+                } else if (error.message === "Timeout Firestore") {
+                    pesanLoginError = "Gagal mengambil data. Cek koneksi Anda.";
+                } else if (error.code === 'permission-denied') {
+                    pesanLoginError = "Akses membaca data ditolak (Permission Denied).";
+                }
+                
+                Swal.fire('Masuk Gagal', pesanLoginError, 'error');
             } finally {
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = "Masuk";
