@@ -112,13 +112,16 @@
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-storage.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
+        // KONFIGURASI FIREBASE BARU ABANG
         const firebaseConfig = {
-            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
-            authDomain: "rodsel-pos-online.firebaseapp.com",
-            projectId: "rodsel-pos-online",
-            storageBucket: "rodsel-pos-online.firebasestorage.app",
-            messagingSenderId: "607558554103",
-            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+            apiKey: "AIzaSyDNZzKTvJMXL4Q07k39DV9Wbdejp9w9oSU",
+            authDomain: "sistem-pos-rodsel.firebaseapp.com",
+            databaseURL: "https://sistem-pos-rodsel-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sistem-pos-rodsel",
+            storageBucket: "sistem-pos-rodsel.firebasestorage.app",
+            messagingSenderId: "504265377102",
+            appId: "1:504265377102:web:14f19b812294fe4eb6ca1f",
+            measurementId: "G-SKBMZH0W7E"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -165,7 +168,7 @@
         });
 
         // =====================================
-        // FUNGSI REGISTRASI (DIPERBAIKI)
+        // FUNGSI REGISTRASI 
         // =====================================
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -211,7 +214,7 @@
 
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firestore")), 10000));
                 
-                await Promise.race([simpanKeDB, timeout]); // Menunggu mana yang lebih dulu selesai
+                await Promise.race([simpanKeDB, timeout]); 
 
                 // 4. Jika Sukses, Reset Form & Pindah ke Halaman Login
                 Swal.fire({ icon: 'success', title: 'Pendaftaran Berhasil!', text: 'Silakan masuk menggunakan akun Anda.', timer: 2500, showConfirmButton: false });
@@ -243,7 +246,7 @@
         });
 
         // =====================================
-        // FUNGSI LOGIN / MASUK (DIPERBAIKI)
+        // FUNGSI LOGIN / MASUK
         // =====================================
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
