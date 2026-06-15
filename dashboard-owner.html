@@ -194,7 +194,7 @@
 
                 <div class="user-profile">
                     <div class="user-info">
-                        <div class="user-name" id="display-name">Ferdian Ocktavianto</div>
+                        <div class="user-name" id="display-name">Memuat...</div>
                         <div class="user-role" id="display-role">Owner</div>
                     </div>
                     <div class="avatar-container">
@@ -554,20 +554,42 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
-            authDomain: "rodsel-pos-online.firebaseapp.com",
-            projectId: "rodsel-pos-online",
-            storageBucket: "rodsel-pos-online.firebasestorage.app",
-            messagingSenderId: "607558554103",
-            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+            apiKey: "AIzaSyDNZzKTvJMXL4Q07k39DV9Wbdejp9w9oSU",
+            authDomain: "sistem-pos-rodsel.firebaseapp.com",
+            databaseURL: "https://sistem-pos-rodsel-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sistem-pos-rodsel",
+            storageBucket: "sistem-pos-rodsel.firebasestorage.app",
+            messagingSenderId: "504265377102",
+            appId: "1:504265377102:web:14f19b812294fe4eb6ca1f",
+            measurementId: "G-SKBMZH0W7E"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
+        // 1. CEK LOGIN & AMBIL PROFIL OWNER
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    document.getElementById('display-name').innerText = data.nama;
+                    // Jika ada foto profil yang diunggah saat daftar, tampilkan
+                    if (data.photoURL && data.photoURL !== "") {
+                        document.getElementById('display-photo').src = data.photoURL;
+                    }
+                }
+            } else {
+                window.location.replace('index.html');
+            }
+        });
+
+        // 2. FUNGSI LOGOUT AMAN
         const btnLogout = document.getElementById('btnLogout');
         if (btnLogout) {
             btnLogout.addEventListener('click', (e) => {
