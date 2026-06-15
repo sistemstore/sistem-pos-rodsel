@@ -6,6 +6,7 @@
     <title>Dashboard Owner - POS Stok RodSel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { display: flex; height: 100vh; background-color: #f1f5f9; color: #334155; overflow: hidden; }
@@ -117,6 +118,7 @@
         .notif-item:hover { background: #f1f5f9; }
         .notif-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; color: white; }
         .bg-warning { background: #f59e0b; }
+        .bg-success { background: #16a34a; }
         .notif-content h4 { font-size: 14px; color: #0f172a; margin-bottom: 5px; }
         .notif-content p { font-size: 13px; color: #475569; line-height: 1.4; }
         .notif-time { font-size: 11px; color: #94a3b8; margin-top: 5px; display: block; }
@@ -167,7 +169,7 @@
                 <i class="fa-solid fa-truck-field"></i> Data Supliyer
             </a>
         </div>
-        <div class="logout-btn" onclick="logout()">
+        <div class="logout-btn" id="btnLogout">
             <i class="fa-solid fa-right-from-bracket"></i> Keluar
         </div>
     </div>
@@ -180,13 +182,11 @@
             </div>
             
             <div class="topbar-right">
-                <!-- TOMBOL CHAT -->
                 <div class="icon-action" title="Pesan/Chat" onclick="toggleChatPanel()">
                     <i class="fa-regular fa-comment-dots"></i>
                     <span class="badge">3</span>
                 </div>
                 
-                <!-- TOMBOL NOTIFIKASI -->
                 <div class="icon-action" title="Notifikasi" onclick="toggleNotifPanel()">
                     <i class="fa-regular fa-bell"></i>
                     <span class="badge" id="notif-count">5</span>
@@ -350,9 +350,6 @@
 
     </div>
 
-    <!-- ============================================== -->
-    <!-- PANEL CHAT INTERNAL (Sliding dari Kanan) -->
-    <!-- ============================================== -->
     <div class="side-panel" id="chatPanel">
         <div class="panel-header">
             <span>Inbox Karyawan</span>
@@ -392,9 +389,6 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- PANEL NOTIFIKASI (Sliding dari Kanan) -->
-    <!-- ============================================== -->
     <div class="side-panel" id="notifPanel">
         <div class="panel-header">
             <span>Notifikasi Sistem</span>
@@ -402,7 +396,6 @@
         </div>
 
         <div class="notif-list">
-            <!-- Notif Uang Masuk / Lunas -->
             <div class="notif-item">
                 <div class="notif-icon bg-green"><i class="fa-solid fa-money-bill-wave"></i></div>
                 <div class="notif-content">
@@ -512,13 +505,6 @@
             alert(`Mencari data untuk:\nTanggal: ${tgl || 'Semua'}\nBulan: ${bln || 'Semua'}\nTahun: ${thn || 'Semua'}\n\n(Nanti akan dihubungkan ke Firebase Query)`);
         }
 
-        // Fungsi Logout
-        function logout() {
-            if(confirm('Apakah Anda yakin ingin keluar?')) {
-                window.location.href = 'index.html';
-            }
-        }
-
         // Render Grafik (Chart.js)
         window.onload = function() {
             const ctxSales = document.getElementById('salesChart').getContext('2d');
@@ -564,6 +550,49 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
         };
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
+            authDomain: "rodsel-pos-online.firebaseapp.com",
+            projectId: "rodsel-pos-online",
+            storageBucket: "rodsel-pos-online.firebasestorage.app",
+            messagingSenderId: "607558554103",
+            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const btnLogout = document.getElementById('btnLogout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yakin ingin keluar?',
+                    text: 'Sesi Anda sebagai Owner akan diakhiri.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Keluar!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        signOut(auth).then(() => {
+                            window.location.replace('index.html');
+                        }).catch((error) => {
+                            console.error("Gagal logout:", error);
+                            Swal.fire('Gagal!', 'Terjadi kesalahan saat mencoba keluar.', 'error');
+                        });
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
