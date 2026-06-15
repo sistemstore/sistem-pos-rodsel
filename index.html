@@ -180,19 +180,16 @@
                 const password = document.getElementById('reg-password').value;
                 const photoFile = document.getElementById('reg-photo').files[0];
 
-                // 1. Buat Akun Auth
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
                 let photoURL = "";
-                // 2. Upload Foto (opsional)
                 if (photoFile) {
                     const imageRef = storageRef(storage, `profile_pictures/${user.uid}`);
                     await uploadBytes(imageRef, photoFile);
                     photoURL = await getDownloadURL(imageRef);
                 }
 
-                // 3. Simpan ke Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     nama: firstName + " " + lastName, 
                     namaDepan: firstName,
@@ -213,17 +210,14 @@
 
             } catch (error) {
                 console.error("Error Registrasi:", error);
-                
                 let pesanError = error.message;
                 if (error.code === 'auth/email-already-in-use') {
                     pesanError = "Email ini sudah pernah didaftarkan. Silakan langsung login atau gunakan email lain.";
                 } else if (error.code === 'permission-denied') {
                     pesanError = "Koneksi ke Database ditolak! Pastikan Rules Firestore sudah disetting 'allow read, write: if true;'";
                 }
-
                 Swal.fire('Pendaftaran Gagal', pesanError, 'error');
             } finally {
-                // INI YANG PALING PENTING AGAR TOMBOL TIDAK MACET
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = "Daftar Sekarang";
             }
@@ -250,11 +244,18 @@
                     const userRole = docSnap.data().role.toLowerCase();
                     Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', showConfirmButton: false, timer: 1000 });
 
+                    // ROUTING BERDASARKAN FILE YANG ADA DI GITHUB ABANG
                     setTimeout(() => {
-                        if (userRole === 'owner' || userRole === 'admin') window.location.href = 'dashboard-admin.html';
-                        else if (userRole === 'kasir') window.location.href = 'dashboard-kasir.html';
-                        else if (userRole === 'sales') window.location.href = 'dashboard-sales.html';
-                        else Swal.fire('Error', 'Jabatan tidak dikenali.', 'error');
+                        if (userRole === 'owner') {
+                            window.location.href = 'dashboard-owner.html';
+                        } else if (userRole === 'admin') {
+                            window.location.href = 'dashboard-admin.html';
+                        } else if (userRole === 'kasir' || userRole === 'sales') {
+                            // Kasir dan Sales diarahkan ke file gabungan ini
+                            window.location.href = 'dashboard-kasir-sales.html';
+                        } else {
+                            Swal.fire('Error', 'Jabatan tidak dikenali.', 'error');
+                        }
                     }, 1000);
                 } else {
                     Swal.fire('Oops!', 'Akun Anda belum tersimpan sempurna di Database. Lapor ke Admin!', 'error');
