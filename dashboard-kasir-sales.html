@@ -6,6 +6,7 @@
     <title>Kasir & Sales - POS Stok RodSel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* --- CSS DASAR & LAYOUT --- */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -165,7 +166,8 @@
             <a class="nav-item" onclick="showSection('po', this)"><i class="fa-solid fa-truck-fast"></i> Request PO Admin</a>
             <a class="nav-item" onclick="showSection('absen', this)"><i class="fa-solid fa-camera"></i> Absen Karyawan</a>
         </div>
-        <div class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Keluar</div>
+        <!-- TOMBOL LOGOUT DIPERBARUI DENGAN ID -->
+        <div class="logout-btn" id="btnLogout"><i class="fa-solid fa-right-from-bracket"></i> Keluar</div>
     </div>
 
     <!-- MAIN CONTENT -->
@@ -447,9 +449,9 @@
         </div>
     </div>
 
-    <!-- AREA CETAK TERSEMBUNYI (Dijalankan saat window.print() dipanggil) -->
+    <!-- AREA CETAK TERSEMBUNYI -->
     
-    <!-- 1. Area Cetak Barcode (Format Thermal Kasir) -->
+    <!-- 1. Area Cetak Barcode -->
     <div id="print-barcode" class="print-container format-thermal">
         <div style="text-align: center; margin-bottom: 10px;">
             <h3 style="margin: 0;">RodSel POS</h3>
@@ -461,7 +463,7 @@
         <p style="text-align: center; font-size: 10px;">Waktu: <span id="waktuPending"></span></p>
     </div>
 
-    <!-- 2. Area Cetak Struk Lunas (Format Thermal 58mm/80mm) -->
+    <!-- 2. Area Cetak Struk Lunas Thermal -->
     <div id="print-struk-thermal" class="print-container format-thermal">
         <div style="text-align: center;">
             <h2 style="margin: 0;">POS Stok RodSel</h2>
@@ -484,7 +486,7 @@
         <p style="text-align: center;">Terima kasih telah berbelanja!</p>
     </div>
 
-    <!-- 3. Area Cetak Invoice A4 (Printer Kabel Biasa) -->
+    <!-- 3. Area Cetak Invoice A4 -->
     <div id="print-struk-a4" class="print-container format-a4">
         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
             <div>
@@ -529,9 +531,8 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA -->
+    <!-- SCRIPT LOGIKA BAWAAN -->
     <script>
-        // --- LOGIKA SIDEBAR & MENU ---
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('show');
             document.getElementById('sidebarOverlay').style.display = document.getElementById('sidebar').classList.contains('show') ? 'block' : 'none';
@@ -552,7 +553,6 @@
             if (window.innerWidth <= 768) toggleSidebar();
         }
 
-        // --- PEMBATASAN AKSES SALES/KASIR ---
         function ubahRole() {
             const role = document.getElementById('roleSimulator').value;
             const btnBayar = document.getElementById('btnBayar');
@@ -565,7 +565,6 @@
         }
         ubahRole();
 
-        // --- FITUR CHAT PANEL ---
         function toggleChatPanel() {
             document.getElementById('chatPanel').classList.toggle('active');
         }
@@ -587,11 +586,10 @@
                 newMsg.innerText = input.value;
                 messageBox.appendChild(newMsg);
                 input.value = '';
-                messageBox.scrollTop = messageBox.scrollHeight; // Auto-scroll ke bawah
+                messageBox.scrollTop = messageBox.scrollHeight; 
             }
         }
 
-        // --- LOGIKA KAMERA ---
         let streamActive = null;
         async function bukaKamera() {
             const video = document.getElementById('videoElement');
@@ -607,7 +605,6 @@
             streamActive.getTracks().forEach(track => track.stop()); streamActive = null;
         }
 
-        // --- FUNGSI CETAK (PRINT & BARCODE) ---
         function eksekusiPrint(divId) {
             document.getElementById('modalCetak').style.display = 'none';
             document.body.classList.add('printing');
@@ -638,8 +635,50 @@
                 window.open(`https://wa.me/${noWA}?text=${encodeURIComponent(textWA)}`, '_blank');
             }
         }
+    </script>
 
-        function logout() { confirm('Keluar dari sistem?') && (window.location.href = 'auth.html'); }
+    <!-- SCRIPT FIREBASE LOGOUT (YANG DITAMBAHKAN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
+            authDomain: "rodsel-pos-online.firebaseapp.com",
+            projectId: "rodsel-pos-online",
+            storageBucket: "rodsel-pos-online.firebasestorage.app",
+            messagingSenderId: "607558554103",
+            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const btnLogout = document.getElementById('btnLogout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yakin ingin keluar?',
+                    text: 'Sesi Anda sebagai Kasir/Sales akan diakhiri.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Keluar!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        signOut(auth).then(() => {
+                            window.location.replace('index.html');
+                        }).catch((error) => {
+                            console.error("Gagal logout:", error);
+                            Swal.fire('Gagal!', 'Terjadi kesalahan saat mencoba keluar.', 'error');
+                        });
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
