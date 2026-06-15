@@ -6,6 +6,7 @@
     <title>Dashboard Admin - POS Stok RodSel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* --- CSS DASAR & LAYOUT --- */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -131,10 +132,8 @@
         .print-area-container { display: none; background: white; }
         @media print {
             body * { visibility: hidden; }
-            /* Hanya tampilkan elemen yang diberi class print-active */
             .print-active, .print-active * { visibility: visible !important; }
             .print-active { position: absolute; left: 0; top: 0; width: 100%; display: block !important; margin: 0; padding: 20px; }
-            /* Sembunyikan Modal saat Print */
             #modalPrint { display: none !important; }
         }
 
@@ -185,7 +184,8 @@
                 <i class="fa-solid fa-file-invoice"></i> Invoice Lunas
             </a>
         </div>
-        <div class="logout-btn" onclick="logout()">
+        <!-- TOMBOL LOGOUT DIPERBARUI DENGAN ID -->
+        <div class="logout-btn" id="btnLogout">
             <i class="fa-solid fa-right-from-bracket"></i> Keluar
         </div>
     </div>
@@ -427,7 +427,6 @@
         <!-- SECTION 7: INVOICE -->
         <div id="section-invoice" class="content-area">
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <!-- Tombol ini sekarang memanggil bukaModalInvoice() -->
                 <button class="btn btn-primary" onclick="bukaModalInvoice()"><i class="fa-solid fa-print"></i> Cetak / PDF Invoice</button>
                 <button class="btn btn-success" onclick="kirimWA()"><i class="fa-brands fa-whatsapp"></i> Kirim WA</button>
             </div>
@@ -447,7 +446,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- PANEL CHAT & NOTIF (Sama seperti sebelumnya) -->
+    <!-- PANEL CHAT & NOTIF -->
     <!-- ============================================== -->
     <div class="side-panel" id="chatPanel">
         <div class="panel-header"><span>Komunikasi Internal</span><i class="fa-solid fa-xmark" onclick="toggleChatPanel()"></i></div>
@@ -472,10 +471,8 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL MODERN & AREA PRINT KHUSUS (BARU) -->
+    <!-- MODAL MODERN & AREA PRINT KHUSUS -->
     <!-- ============================================== -->
-    
-    <!-- Modal Pemilihan Print -->
     <div id="modalPrint" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
         <div style="background:white; padding:25px; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
             <h3 id="modalTitle" style="margin-bottom:15px; color:#0f172a;">Cetak Dokumen</h3>
@@ -489,7 +486,6 @@
         </div>
     </div>
 
-    <!-- Layout Khusus Kertas untuk PO (Sembunyi by default) -->
     <div id="print-po-area" class="print-area-container">
         <div style="text-align:center; margin-bottom:20px; border-bottom: 2px dashed #000; padding-bottom: 20px;">
             <h2 style="text-transform:uppercase; margin-bottom:5px;">PURCHASE ORDER (PO)</h2>
@@ -509,7 +505,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGIKA -->
+    <!-- SCRIPT LOGIKA BAWAAN TEMPLATE -->
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -529,24 +525,20 @@
             if (window.innerWidth <= 768) toggleSidebar();
         }
 
-        // --- FUNGSI PANEL ---
         function toggleChatPanel() { document.getElementById('chatPanel').classList.toggle('active'); document.getElementById('notifPanel').classList.remove('active'); }
         function toggleNotifPanel() { document.getElementById('notifPanel').classList.toggle('active'); document.getElementById('chatPanel').classList.remove('active'); document.getElementById('notif-po').style.display = 'none'; }
         function bukaRuangChat(namaLawan) { document.getElementById('chatContacts').style.display = 'none'; document.getElementById('chatRoom').style.display = 'flex'; document.getElementById('namaLawanBicara').innerText = namaLawan; }
         function kembaliKeKontakChat() { document.getElementById('chatRoom').style.display = 'none'; document.getElementById('chatContacts').style.display = 'block'; }
         function kirimPesan() { const input = document.getElementById('chatInput'); if(input.value.trim() !== '') { const messageBox = document.getElementById('chatMessages'); const newMsg = document.createElement('div'); newMsg.className = 'msg-bubble msg-sent'; newMsg.innerText = input.value; messageBox.appendChild(newMsg); input.value = ''; messageBox.scrollTop = messageBox.scrollHeight; } }
 
-        // --- FUNGSI MODAL & PRINT MODERN ---
         let targetPrintId = "";
 
         function bukaModalPO(noPO, namaBarang, qty) {
             document.getElementById('modalTitle').innerText = "Cetak PO: " + noPO;
-            // Isi data ke layout PO
             document.getElementById('po-val').innerText = noPO;
             document.getElementById('brg-val').innerText = namaBarang;
             document.getElementById('qty-val').innerText = qty;
             document.getElementById('waktu-val').innerText = new Date().toLocaleDateString('id-ID');
-            
             targetPrintId = "print-po-area";
             document.getElementById('modalPrint').style.display = 'flex';
         }
@@ -559,15 +551,10 @@
 
         function eksekusiPrint() {
             document.getElementById('modalPrint').style.display = 'none';
-            
-            // Tambahkan class print-active ke elemen yg dituju agar kelihatan saat dicetak
             const areaPrint = document.getElementById(targetPrintId);
             document.body.classList.add('print-active');
             areaPrint.classList.add('print-active');
-            
             window.print();
-            
-            // Kembalikan seperti semula setelah jendela print ditutup
             document.body.classList.remove('print-active');
             areaPrint.classList.remove('print-active');
         }
@@ -577,26 +564,16 @@
             eksekusiPrint();
         }
 
-        // --- FUNGSI ACC / TOLAK PO (UPDATE MEMUNCULKAN TOMBOL PRINT) ---
         function accPO(rowId, noPO, namaBarang, qty) {
             if(confirm(`Yakin ingin menyetujui ${noPO} (${namaBarang})?`)) {
-                // Ubah badge
                 const statusBadge = document.querySelector(`#${rowId} .status-badge`);
                 statusBadge.className = 'status-badge status-acc';
                 statusBadge.innerText = 'Di-ACC';
-                
-                // Hapus tombol ACC/Tolak, Ganti dengan Status Disetujui + Tombol Cetak
-                document.getElementById(rowId.replace('row', 'aksi')).innerHTML = `
-                    <span style="color:#16a34a; font-size:12px; font-weight:bold; margin-right:8px;"><i class="fa-solid fa-check"></i> Disetujui</span>
-                    <button class="btn btn-primary btn-sm" onclick="bukaModalPO('${noPO}', '${namaBarang}', ${qty})"><i class="fa-solid fa-print"></i> Cetak</button>
-                `;
-                
-                // Tambah otomatis ke Barang Masuk
+                document.getElementById(rowId.replace('row', 'aksi')).innerHTML = `<span style="color:#16a34a; font-size:12px; font-weight:bold; margin-right:8px;"><i class="fa-solid fa-check"></i> Disetujui</span><button class="btn btn-primary btn-sm" onclick="bukaModalPO('${noPO}', '${namaBarang}', ${qty})"><i class="fa-solid fa-print"></i> Cetak</button>`;
                 const tabelMasuk = document.getElementById('tabel-barang-masuk');
                 if(tabelMasuk.innerText.includes('Belum ada')) tabelMasuk.innerHTML = ''; 
                 const today = new Date().toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'});
                 tabelMasuk.innerHTML += `<tr><td>${today}</td><td>${noPO}</td><td>${namaBarang}</td><td>${qty}</td><td><span style="color:#16a34a; font-weight:bold;">Selesai (ACC)</span></td></tr>`;
-                
                 let notif = parseInt(document.getElementById('notif-po').innerText);
                 document.getElementById('notif-po').innerText = notif > 0 ? notif - 1 : 0;
             }
@@ -610,7 +587,6 @@
             }
         }
 
-        // --- FUNGSI LAINNYA ---
         function simpanBarangKeFirebase() {
             const kat = document.getElementById('kategori').value, nm = document.getElementById('namaProduk').value, bc = document.getElementById('barcode').value||'-', hm = document.getElementById('hargaModal').value, hj = document.getElementById('hargaJual').value, dsc = document.getElementById('diskon').value||'0', qt = document.getElementById('qty').value;
             if(!kat || !nm || !hm || !hj || !qt) return alert("Harap lengkapi semua kolom yang wajib!");
@@ -622,7 +598,50 @@
         async function bukaKamera() { const video = document.getElementById('videoElement'); video.style.display = 'block'; streamActive = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }); video.srcObject = streamActive; }
         function ambilFotoAbsen(tipe) { if (!streamActive) return alert("Buka kamera dulu!"); document.getElementById('hasil-absen').innerText = `Berhasil ${tipe}! Foto disimpan.`; streamActive.getTracks().forEach(track => track.stop()); streamActive = null; }
         function kirimWA() { prompt("Nomor WA:") && window.open('https://wa.me/?text=InvoiceLunas', '_blank'); }
-        function logout() { confirm('Keluar?') && (window.location.href = 'auth.html'); }
+    </script>
+
+    <!-- SCRIPT FIREBASE LOGOUT (YANG DITAMBAHKAN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+        import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmqxTwUsNGfQCkbnUThokntNWmWWxZZeE",
+            authDomain: "rodsel-pos-online.firebaseapp.com",
+            projectId: "rodsel-pos-online",
+            storageBucket: "rodsel-pos-online.firebasestorage.app",
+            messagingSenderId: "607558554103",
+            appId: "1:607558554103:web:0e06eaf5eb7d9d9eca9ef2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const btnLogout = document.getElementById('btnLogout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Yakin ingin keluar?',
+                    text: 'Sesi Anda sebagai Admin akan diakhiri.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Keluar!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        signOut(auth).then(() => {
+                            window.location.replace('index.html');
+                        }).catch((error) => {
+                            console.error("Gagal logout:", error);
+                            Swal.fire('Gagal!', 'Terjadi kesalahan saat mencoba keluar.', 'error');
+                        });
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
